@@ -35,14 +35,19 @@ async function fetchNYLotteryData() {
         
         // Get the LATEST 50 drawings (data is oldest first, so take from the END)
         const totalRecords = apiData.data.length;
-        const recentDrawings = apiData.data.slice(-50); // Take last 50 (most recent)
+        console.log(`📊 Total records in API: ${totalRecords}`);
         
-        console.log(`📅 Taking records ${totalRecords - 50} to ${totalRecords} (most recent)`);
+        // Take the absolute last 50 records (including the very last one)
+        const recentDrawings = apiData.data.slice(-50);
+        
+        console.log(`📅 Taking records ${totalRecords - 50} to ${totalRecords - 1} (most recent)`);
+        console.log(`🔍 Last record date: ${recentDrawings[recentDrawings.length - 1]?.[8]}`);
+        console.log(`🔍 Last record numbers: ${recentDrawings[recentDrawings.length - 1]?.[9]}`);
         
         const processedResults = [];
         
         // Process in reverse order so newest is first in our results
-        recentDrawings.reverse().forEach(row => {
+        recentDrawings.reverse().forEach((row, index) => {
             try {
                 // Based on your example format:
                 // Index 8: "2025-05-31T00:00:00" (date)
@@ -53,20 +58,22 @@ async function fetchNYLotteryData() {
                 const winningNumbers = row[9]; // Winning numbers column
                 const multiplier = row[10]; // Multiplier column
                 
+                console.log(`🔍 Processing row ${index}: Date=${drawDate}, Numbers=${winningNumbers}`);
+                
                 if (!drawDate || !winningNumbers) {
-                    console.log('⚠️  Skipping row with missing data:', row.slice(0, 12));
+                    console.log('⚠️  Skipping row with missing data');
                     return;
                 }
                 
                 // Parse the winning numbers
-                // Format: "01 29 37 56 68 13" (space separated)
+                // Format: "01 29 37 56 68 13" (space separated, 6 numbers total)
                 const numbersStr = winningNumbers.toString().trim();
                 
                 // Extract numbers (split by spaces, remove leading zeros)
                 const allNumbers = numbersStr.split(' ').map(n => parseInt(n.trim()));
                 
                 if (!allNumbers || allNumbers.length !== 6) {
-                    console.log('⚠️  Invalid number format (expected 6 numbers):', numbersStr);
+                    console.log('⚠️  Invalid number format (expected 6 numbers):', numbersStr, 'Got:', allNumbers);
                     return;
                 }
                 
@@ -79,7 +86,7 @@ async function fetchNYLotteryData() {
                 const validRed = powerball >= 1 && powerball <= 26;
                 
                 if (!validWhite || !validRed) {
-                    console.log('⚠️  Numbers out of range:', { whiteBalls, powerball });
+                    console.log('⚠️  Numbers out of range:', { whiteBalls, powerball, validWhite, validRed });
                     return;
                 }
                 
@@ -87,17 +94,20 @@ async function fetchNYLotteryData() {
                 const date = new Date(drawDate);
                 const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD
                 
-                processedResults.push({
+                const result = {
                     date: formattedDate,
                     white: whiteBalls,
                     red: powerball,
                     jackpot: "0", // NY.gov doesn't provide jackpot amounts
-                    multiplier: multiplier || "1",
-                    original_index: apiData.data.indexOf(row) // For debugging
-                });
+                    multiplier: multiplier || "1"
+                };
+                
+                processedResults.push(result);
+                
+                console.log(`✅ Added: ${formattedDate} [${whiteBalls.join(',')}] PB:${powerball}`);
                 
             } catch (error) {
-                console.log('⚠️  Error processing row:', error.message, row.slice(0, 12));
+                console.log('⚠️  Error processing row:', error.message);
             }
         });
         
