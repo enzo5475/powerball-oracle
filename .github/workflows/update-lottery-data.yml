@@ -1,0 +1,164 @@
+name: Update Lottery Data
+
+on:
+  schedule:
+    # Runs every Wednesday and Saturday at 11:30 PM ET (3:30 AM UTC Thursday/Sunday)
+    - cron: '30 3 * * 4,1'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+  push:
+    paths:
+      - 'update-lottery-data.js'  # Also run when scraper script is updated
+
+env:
+  TZ: America/New_York  # Set timezone to Eastern Time
+
+jobs:
+  update-lottery-data:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      actions: read
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for proper git operations
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Create package.json if not exists
+      run: |
+        if [ ! -f package.json ]; then
+          echo "Creating package.json..."
+          cat > package.json << EOF
+        {
+          "name": "powerball-oracle",
+          "version": "1.0.0",
+          "description": "Automated lottery data updater",
+          "main": "update-lottery-data.js",
+          "scripts": {
+            "update": "node update-lottery-data.js"
+          },
+          "dependencies": {
+            "axios": "^1.6.0",
+            "cheerio": "^1.0.0-rc.12"
+          }
+        }
+        EOF
+        fi
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Verify lottery data file exists
+      run: |
+        if [ ! -f lottery-data.json ]; then
+          echo "Creating initial lottery-data.json..."
+          cat > lottery-data.json << 'EOF'
+        {
+          "last_updated": "2025-01-01T00:00:00Z",
+          "results": [],
+          "frequency": {
+            "white": {},
+            "red": {}
+          }
+        }
+        EOF
+        fi
+    
+    - name: Run lottery data update
+      run: |
+        echo "🎰 Starting Powerball data update..."
+        echo "Current time: $(date)"
+        echo "Timezone: $TZ"
+        node update-lottery-data.js
+      continue-on-error: false
+    
+    - name: Verify update results
+      run: |
+        echo "📊 Checking updated lottery data..."
+        if [ -f lottery-data.json ]; then
+          echo "✅ lottery-data.json exists"
+          echo "File size: $(wc -c < lottery-data.json) bytes"
+          echo "Number of results: $(jq '.results | length' lottery-data.json 2>/dev/null || echo 'Could not parse JSON')"
+          echo "Last updated: $(jq -r '.last_updated' lottery-data.json 2>/dev/null || echo 'Could not parse timestamp')"
+        else
+          echo "❌ lottery-data.json missing!"
+          exit 1
+        fi
+    
+    - name: Check for changes
+      id: check_changes
+      run: |
+        if git diff --quiet lottery-data.json; then
+          echo "No changes detected in lottery-data.json"
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "Changes detected in lottery-data.json"
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          git diff lottery-data.json
+        fi
+    
+    - name: Configure git
+      if: steps.check_changes.outputs.has_changes == 'true'
+      run: |
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+    
+    - name: Commit and push changes
+      if: steps.check_changes.outputs.has_changes == 'true'
+      run: |
+        echo "📝 Committing lottery data updates..."
+        git add lottery-data.json
+        
+        # Get the latest drawing date for commit message
+        LATEST_DATE=$(jq -r '.results[0].date // "unknown"' lottery-data.json)
+        LATEST_NUMBERS=$(jq -r '.results[0].white // [] | join(",")' lottery-data.json)
+        LATEST_POWERBALL=$(jq -r '.results[0].red // "?"' lottery-data.json)
+        TOTAL_RESULTS=$(jq '.results | length' lottery-data.json)
+        
+        COMMIT_MSG="🎰 Auto-update: Powerball $LATEST_DATE [$LATEST_NUMBERS] PB:$LATEST_POWERBALL ($TOTAL_RESULTS total)"
+        
+        git commit -m "$COMMIT_MSG"
+        git push
+        
+        echo "✅ Successfully pushed lottery data update"
+        echo "📊 Commit message: $COMMIT_MSG"
+    
+    - name: Update summary
+      if: always()
+      run: |
+        echo "## 🎰 Powerball Data Update Summary" >> $GITHUB_STEP_SUMMARY
+        echo "**Timestamp:** $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f lottery-data.json ]; then
+          TOTAL_RESULTS=$(jq '.results | length' lottery-data.json 2>/dev/null || echo "0")
+          LAST_UPDATE=$(jq -r '.last_updated' lottery-data.json 2>/dev/null || echo "unknown")
+          LATEST_DATE=$(jq -r '.results[0].date // "no data"' lottery-data.json 2>/dev/null)
+          
+          echo "**Total Results:** $TOTAL_RESULTS" >> $GITHUB_STEP_SUMMARY
+          echo "**Last Updated:** $LAST_UPDATE" >> $GITHUB_STEP_SUMMARY
+          echo "**Latest Drawing:** $LATEST_DATE" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]; then
+            echo "**Changes:** ✅ New data added and committed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Changes:** ℹ️ No new data (up to date)" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "**Error:** ❌ lottery-data.json not found" >> $GITHUB_STEP_SUMMARY
+        fi
+    
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ Lottery data update failed!"
+        echo "Check the logs above for details."
+        echo "The app will continue using existing data until the next successful update."
