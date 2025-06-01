@@ -1,4 +1,4 @@
-name: Update Lottery Data
+name: Update Lottery Data (NY.gov API)
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # Allows manual trigger from GitHub UI
   push:
     paths:
-      - 'update-lottery-data.js'  # Also run when scraper script is updated
+      - 'fetch-ny-lottery-data.js'  # Also run when fetcher script is updated
 
 env:
   TZ: America/New_York  # Set timezone to Eastern Time
@@ -31,29 +31,10 @@ jobs:
       with:
         node-version: '20'
     
-    - name: Create package.json if not exists
-      run: |
-        if [ ! -f package.json ]; then
-          echo "Creating package.json..."
-          cat > package.json << EOF
-        {
-          "name": "powerball-oracle",
-          "version": "1.0.0",
-          "description": "Automated lottery data updater",
-          "main": "update-lottery-data.js",
-          "scripts": {
-            "update": "node update-lottery-data.js"
-          },
-          "dependencies": {
-            "axios": "^1.6.0",
-            "cheerio": "^1.0.0-rc.12"
-          }
-        }
-        EOF
-        fi
-    
     - name: Install dependencies
-      run: npm install
+      run: |
+        npm init -y
+        npm install node-fetch
     
     - name: Verify lottery data file exists
       run: |
@@ -66,17 +47,19 @@ jobs:
           "frequency": {
             "white": {},
             "red": {}
-          }
+          },
+          "source": "NY.gov Official API"
         }
         EOF
         fi
     
-    - name: Run lottery data update
+    - name: Fetch latest data from NY.gov API
       run: |
-        echo "🎰 Starting Powerball data update..."
+        echo "🎰 Starting NY.gov Powerball data update..."
         echo "Current time: $(date)"
         echo "Timezone: $TZ"
-        node update-lottery-data.js
+        echo "🌐 Fetching from: https://data.ny.gov/api/views/d6yy-54nr/rows.json"
+        node fetch-ny-lottery-data.js
       continue-on-error: false
     
     - name: Verify update results
@@ -85,8 +68,20 @@ jobs:
         if [ -f lottery-data.json ]; then
           echo "✅ lottery-data.json exists"
           echo "File size: $(wc -c < lottery-data.json) bytes"
-          echo "Number of results: $(jq '.results | length' lottery-data.json 2>/dev/null || echo 'Could not parse JSON')"
-          echo "Last updated: $(jq -r '.last_updated' lottery-data.json 2>/dev/null || echo 'Could not parse timestamp')"
+          
+          # Check if jq is available for JSON parsing
+          if command -v jq &> /dev/null; then
+            echo "Number of results: $(jq '.results | length' lottery-data.json 2>/dev/null || echo 'Could not parse JSON')"
+            echo "Last updated: $(jq -r '.last_updated' lottery-data.json 2>/dev/null || echo 'Could not parse timestamp')"
+            echo "Data source: $(jq -r '.source' lottery-data.json 2>/dev/null || echo 'Could not parse source')"
+            
+            # Show latest drawing info
+            echo "Latest drawing date: $(jq -r '.results[0].date // "No data"' lottery-data.json 2>/dev/null)"
+            echo "Latest white balls: $(jq -r '.results[0].white // [] | join(",")' lottery-data.json 2>/dev/null)"
+            echo "Latest powerball: $(jq -r '.results[0].red // "N/A"' lottery-data.json 2>/dev/null)"
+          else
+            echo "⚠️  jq not available, skipping detailed JSON analysis"
+          fi
         else
           echo "❌ lottery-data.json missing!"
           exit 1
@@ -101,7 +96,8 @@ jobs:
         else
           echo "Changes detected in lottery-data.json"
           echo "has_changes=true" >> $GITHUB_OUTPUT
-          git diff lottery-data.json
+          echo "📈 Changes preview:"
+          git diff --stat lottery-data.json
         fi
     
     - name: Configure git
@@ -116,13 +112,22 @@ jobs:
         echo "📝 Committing lottery data updates..."
         git add lottery-data.json
         
-        # Get the latest drawing date for commit message
-        LATEST_DATE=$(jq -r '.results[0].date // "unknown"' lottery-data.json)
-        LATEST_NUMBERS=$(jq -r '.results[0].white // [] | join(",")' lottery-data.json)
-        LATEST_POWERBALL=$(jq -r '.results[0].red // "?"' lottery-data.json)
-        TOTAL_RESULTS=$(jq '.results | length' lottery-data.json)
+        # Extract latest drawing info for commit message (with fallbacks)
+        if command -v jq &> /dev/null; then
+          LATEST_DATE=$(jq -r '.results[0].date // "unknown"' lottery-data.json 2>/dev/null || echo "unknown")
+          LATEST_NUMBERS=$(jq -r '.results[0].white // [] | join(",")' lottery-data.json 2>/dev/null || echo "unknown")
+          LATEST_POWERBALL=$(jq -r '.results[0].red // "?"' lottery-data.json 2>/dev/null || echo "?")
+          TOTAL_RESULTS=$(jq '.results | length' lottery-data.json 2>/dev/null || echo "0")
+          DATA_SOURCE=$(jq -r '.source // "NY.gov API"' lottery-data.json 2>/dev/null || echo "NY.gov API")
+        else
+          LATEST_DATE="unknown"
+          LATEST_NUMBERS="unknown"
+          LATEST_POWERBALL="?"
+          TOTAL_RESULTS="unknown"
+          DATA_SOURCE="NY.gov API"
+        fi
         
-        COMMIT_MSG="🎰 Auto-update: Powerball $LATEST_DATE [$LATEST_NUMBERS] PB:$LATEST_POWERBALL ($TOTAL_RESULTS total)"
+        COMMIT_MSG="🎰 Auto-update: Powerball $LATEST_DATE [$LATEST_NUMBERS] PB:$LATEST_POWERBALL ($TOTAL_RESULTS total) - $DATA_SOURCE"
         
         git commit -m "$COMMIT_MSG"
         git push
@@ -133,18 +138,23 @@ jobs:
     - name: Update summary
       if: always()
       run: |
-        echo "## 🎰 Powerball Data Update Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## 🎰 NY.gov Powerball Data Update Summary" >> $GITHUB_STEP_SUMMARY
         echo "**Timestamp:** $(date)" >> $GITHUB_STEP_SUMMARY
         echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Data Source:** NY.gov Official API" >> $GITHUB_STEP_SUMMARY
+        echo "**API URL:** https://data.ny.gov/api/views/d6yy-54nr/rows.json" >> $GITHUB_STEP_SUMMARY
         
-        if [ -f lottery-data.json ]; then
+        if [ -f lottery-data.json ] && command -v jq &> /dev/null; then
           TOTAL_RESULTS=$(jq '.results | length' lottery-data.json 2>/dev/null || echo "0")
           LAST_UPDATE=$(jq -r '.last_updated' lottery-data.json 2>/dev/null || echo "unknown")
           LATEST_DATE=$(jq -r '.results[0].date // "no data"' lottery-data.json 2>/dev/null)
+          LATEST_NUMBERS=$(jq -r '.results[0].white // [] | join(", ")' lottery-data.json 2>/dev/null)
+          LATEST_PB=$(jq -r '.results[0].red // "N/A"' lottery-data.json 2>/dev/null)
           
           echo "**Total Results:** $TOTAL_RESULTS" >> $GITHUB_STEP_SUMMARY
           echo "**Last Updated:** $LAST_UPDATE" >> $GITHUB_STEP_SUMMARY
           echo "**Latest Drawing:** $LATEST_DATE" >> $GITHUB_STEP_SUMMARY
+          echo "**Latest Numbers:** [$LATEST_NUMBERS] PB: $LATEST_PB" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]; then
             echo "**Changes:** ✅ New data added and committed" >> $GITHUB_STEP_SUMMARY
@@ -152,12 +162,13 @@ jobs:
             echo "**Changes:** ℹ️ No new data (up to date)" >> $GITHUB_STEP_SUMMARY
           fi
         else
-          echo "**Error:** ❌ lottery-data.json not found" >> $GITHUB_STEP_SUMMARY
+          echo "**Error:** ❌ lottery-data.json not found or jq unavailable" >> $GITHUB_STEP_SUMMARY
         fi
     
     - name: Notify on failure
       if: failure()
       run: |
-        echo "❌ Lottery data update failed!"
+        echo "❌ NY.gov lottery data update failed!"
         echo "Check the logs above for details."
         echo "The app will continue using existing data until the next successful update."
+        echo "🌐 API URL: https://data.ny.gov/api/views/d6yy-54nr/rows.json"
