@@ -71,6 +71,73 @@
             font-size: 0.9em;
         }
         
+        .winning-status {
+            margin-top: 5px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .win-jackpot {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #000;
+            animation: flash 1s infinite;
+        }
+        
+        .win-million {
+            background: linear-gradient(45deg, #c0392b, #e74c3c);
+            color: white;
+        }
+        
+        .win-large {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+        }
+        
+        .win-medium {
+            background: linear-gradient(45deg, #2980b9, #3498db);
+            color: white;
+        }
+        
+        .win-small {
+            background: linear-gradient(45deg, #8e44ad, #9b59b6);
+            color: white;
+        }
+        
+        .win-none {
+            background: #444;
+            color: #999;
+        }
+        
+        @keyframes flash {
+            0%, 50% { opacity: 1; }
+            25%, 75% { opacity: 0.5; }
+        }
+        
+        .latest-numbers {
+            background: rgba(255, 215, 0, 0.1);
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .latest-numbers h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .winning-numbers {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        
         .numbers {
             display: flex;
             gap: 8px;
@@ -180,6 +247,12 @@
             ⚡ Generate Divine Numbers ⚡
         </button>
         
+        <div id="latest-winning" class="latest-numbers" style="display: none;">
+            <h3>🎯 Latest Winning Numbers</h3>
+            <div id="winning-display"></div>
+            <div id="winning-date" style="color: #ccc; font-size: 0.9em; margin-top: 5px;"></div>
+        </div>
+        
         <div id="error-status" class="error-box" style="display: none;"></div>
         <div id="debug-info" class="debug-box" style="display: none;"></div>
         
@@ -205,6 +278,51 @@
         let LOTTERY_DATA = null;
         let ERROR_LOG = [];
         let DEBUG_INFO = [];
+        let LATEST_WINNING_NUMBERS = null;
+        
+        function checkWinnings(myWhite, myRed, winningWhite, winningRed) {
+            // Count how many white numbers match (order doesn't matter)
+            const whiteMatches = myWhite.filter(num => winningWhite.includes(num)).length;
+            const redMatch = myRed === winningRed;
+            
+            // Determine prize based on Powerball rules
+            if (whiteMatches === 5 && redMatch) {
+                return { prize: "JACKPOT! 🎰💰", amount: "Jackpot", class: "jackpot" };
+            } else if (whiteMatches === 5 && !redMatch) {
+                return { prize: "🎉 $1,000,000", amount: "$1,000,000", class: "million" };
+            } else if (whiteMatches === 4 && redMatch) {
+                return { prize: "🎉 $50,000", amount: "$50,000", class: "large" };
+            } else if (whiteMatches === 4 && !redMatch) {
+                return { prize: "🎉 $100", amount: "$100", class: "medium" };
+            } else if (whiteMatches === 3 && redMatch) {
+                return { prize: "🎉 $100", amount: "$100", class: "medium" };
+            } else if (whiteMatches === 3 && !redMatch) {
+                return { prize: "🎉 $7", amount: "$7", class: "small" };
+            } else if (whiteMatches === 2 && redMatch) {
+                return { prize: "🎉 $7", amount: "$7", class: "small" };
+            } else if (whiteMatches === 1 && redMatch) {
+                return { prize: "🎉 $4", amount: "$4", class: "small" };
+            } else if (whiteMatches === 0 && redMatch) {
+                return { prize: "🎉 $4", amount: "$4", class: "small" };
+            } else {
+                return { prize: "No win", amount: "$0", class: "none" };
+            }
+        }
+        
+        function getLatestWinningNumbers() {
+            if (!LOTTERY_DATA || !LOTTERY_DATA.results || LOTTERY_DATA.results.length === 0) {
+                return null;
+            }
+            
+            // Get the most recent drawing
+            const latest = LOTTERY_DATA.results[0];
+            return {
+                white: latest.white,
+                red: latest.red,
+                date: latest.date,
+                jackpot: latest.jackpot
+            };
+        }
         
         function logError(message, details = null) {
             const timestamp = new Date().toLocaleString();
@@ -288,6 +406,13 @@
                     hasFrequency: !!LOTTERY_DATA.frequency
                 });
                 
+                // Set latest winning numbers for comparison
+                LATEST_WINNING_NUMBERS = getLatestWinningNumbers();
+                if (LATEST_WINNING_NUMBERS) {
+                    logDebug('Latest winning numbers loaded', LATEST_WINNING_NUMBERS);
+                    displayLatestWinningNumbers();
+                }
+                
                 if (!LOTTERY_DATA.results) {
                     LOTTERY_DATA.results = [];
                     logError('No results array in lottery data, created empty array');
@@ -299,6 +424,69 @@
                 }
                 
                 console.log(`✅ Loaded ${LOTTERY_DATA.results.length} lottery results`);
+                
+            } catch (error) {
+                logError('Failed to load lottery data', {
+                    error: error.message,
+                    stack: error.stack
+                });
+                
+                // Check if file exists
+                try {
+                    const testResponse = await fetch('lottery-data.json', { method: 'HEAD' });
+                    logDebug('File existence check', { exists: testResponse.ok, status: testResponse.status });
+                } catch (headError) {
+                    logError('File does not exist or network error', { error: headError.message });
+                }
+                
+                // Fallback data
+                LOTTERY_DATA = {
+                    results: [],
+                    frequency: { white: {}, red: {} },
+                    last_updated: null
+                };
+                
+                logDebug('Using fallback empty data structure');
+            }
+        }
+        
+        function displayLatestWinningNumbers() {
+            const latestDiv = document.getElementById('latest-winning');
+            const displayDiv = document.getElementById('winning-display');
+            const dateDiv = document.getElementById('winning-date');
+            
+            if (!LATEST_WINNING_NUMBERS) {
+                latestDiv.style.display = 'none';
+                return;
+            }
+            
+            const { white, red, date, jackpot } = LATEST_WINNING_NUMBERS;
+            
+            // Display the winning numbers
+            let html = '<div class="winning-numbers">';
+            white.forEach(num => {
+                html += `<span class="white-ball">${num}</span>`;
+            });
+            html += `<span class="red-ball">${red}</span>`;
+            html += '</div>';
+            
+            displayDiv.innerHTML = html;
+            
+            const formattedDate = new Date(date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            const jackpotFormatted = jackpot && jackpot !== "0" ? 
+                `${parseInt(jackpot).toLocaleString()}` : 
+                'Unknown';
+            
+            dateDiv.innerHTML = `Drawing: ${formattedDate}<br>Jackpot: ${jackpotFormatted}`;
+            
+            latestDiv.style.display = 'block';
+        }
                 
             } catch (error) {
                 logError('Failed to load lottery data', {
@@ -719,6 +907,18 @@
                             logDebug(`Calculating method: ${method.name}`);
                             const result = method.func();
                             
+                            // Check if this method won anything
+                            let winStatus = '';
+                            if (LATEST_WINNING_NUMBERS) {
+                                const win = checkWinnings(
+                                    result.whites, 
+                                    result.red, 
+                                    LATEST_WINNING_NUMBERS.white, 
+                                    LATEST_WINNING_NUMBERS.red
+                                );
+                                winStatus = `<div class="winning-status win-${win.class}">${win.prize}</div>`;
+                            }
+                            
                             html += `
                                 <div class="method-group">
                                     <div class="method-title">${method.name}</div>
@@ -727,6 +927,7 @@
                                         <span class="red-ball">${result.red}</span>
                                     </div>
                                     <div class="calculation-note">${result.note}</div>
+                                    ${winStatus}
                                 </div>
                             `;
                         } catch (error) {
