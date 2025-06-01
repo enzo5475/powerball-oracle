@@ -243,6 +243,10 @@
             <button class="toggle-btn" onclick="toggleDebug()">Show Debug Info</button>
             <button class="toggle-btn" onclick="toggleErrors()">Show Error Log</button>
         </div>
+        
+        <div id="error-status" class="error-box" style="display: none;"></div>
+        <div id="debug-info" class="debug-box" style="display: none;"></div>
+        
         <button class="generate-btn" onclick="generateAllMethods()">
             ⚡ Generate Divine Numbers ⚡
         </button>
@@ -252,9 +256,6 @@
             <div id="winning-display"></div>
             <div id="winning-date" style="color: #ccc; font-size: 0.9em; margin-top: 5px;"></div>
         </div>
-        
-        <div id="error-status" class="error-box" style="display: none;"></div>
-        <div id="debug-info" class="debug-box" style="display: none;"></div>
         
         <div id="results"></div>
         
@@ -281,11 +282,9 @@
         let LATEST_WINNING_NUMBERS = null;
         
         function checkWinnings(myWhite, myRed, winningWhite, winningRed) {
-            // Count how many white numbers match (order doesn't matter)
             const whiteMatches = myWhite.filter(num => winningWhite.includes(num)).length;
             const redMatch = myRed === winningRed;
             
-            // Determine prize based on Powerball rules
             if (whiteMatches === 5 && redMatch) {
                 return { prize: "JACKPOT! 🎰💰", amount: "Jackpot", class: "jackpot" };
             } else if (whiteMatches === 5 && !redMatch) {
@@ -314,7 +313,6 @@
                 return null;
             }
             
-            // Get the most recent drawing
             const latest = LOTTERY_DATA.results[0];
             return {
                 white: latest.white,
@@ -345,7 +343,7 @@
                 return;
             }
             
-            const recent = ERROR_LOG.slice(-5); // Show last 5 errors
+            const recent = ERROR_LOG.slice(-5);
             let html = '<h4>🚨 Error Status</h4>';
             recent.forEach(error => {
                 html += `<div><strong>${error.timestamp}:</strong> ${error.message}</div>`;
@@ -360,7 +358,7 @@
             const debugBox = document.getElementById('debug-info');
             if (DEBUG_INFO.length === 0) return;
             
-            const recent = DEBUG_INFO.slice(-10); // Show last 10 debug entries
+            const recent = DEBUG_INFO.slice(-10);
             let html = '<h4>🔍 Debug Information</h4>';
             recent.forEach(debug => {
                 html += `<div><strong>${debug.timestamp}:</strong> ${debug.message}</div>`;
@@ -406,7 +404,6 @@
                     hasFrequency: !!LOTTERY_DATA.frequency
                 });
                 
-                // Set latest winning numbers for comparison
                 LATEST_WINNING_NUMBERS = getLatestWinningNumbers();
                 if (LATEST_WINNING_NUMBERS) {
                     logDebug('Latest winning numbers loaded', LATEST_WINNING_NUMBERS);
@@ -431,7 +428,6 @@
                     stack: error.stack
                 });
                 
-                // Check if file exists
                 try {
                     const testResponse = await fetch('lottery-data.json', { method: 'HEAD' });
                     logDebug('File existence check', { exists: testResponse.ok, status: testResponse.status });
@@ -439,7 +435,6 @@
                     logError('File does not exist or network error', { error: headError.message });
                 }
                 
-                // Fallback data
                 LOTTERY_DATA = {
                     results: [],
                     frequency: { white: {}, red: {} },
@@ -462,7 +457,6 @@
             
             const { white, red, date, jackpot } = LATEST_WINNING_NUMBERS;
             
-            // Display the winning numbers
             let html = '<div class="winning-numbers">';
             white.forEach(num => {
                 html += `<span class="white-ball">${num}</span>`;
@@ -480,46 +474,21 @@
             });
             
             const jackpotFormatted = jackpot && jackpot !== "0" ? 
-                `${parseInt(jackpot).toLocaleString()}` : 
+                `$${parseInt(jackpot).toLocaleString()}` : 
                 'Unknown';
             
             dateDiv.innerHTML = `Drawing: ${formattedDate}<br>Jackpot: ${jackpotFormatted}`;
             
             latestDiv.style.display = 'block';
         }
-                
-            } catch (error) {
-                logError('Failed to load lottery data', {
-                    error: error.message,
-                    stack: error.stack
-                });
-                
-                // Check if file exists
-                try {
-                    const testResponse = await fetch('lottery-data.json', { method: 'HEAD' });
-                    logDebug('File existence check', { exists: testResponse.ok, status: testResponse.status });
-                } catch (headError) {
-                    logError('File does not exist or network error', { error: headError.message });
-                }
-                
-                // Fallback data
-                LOTTERY_DATA = {
-                    results: [],
-                    frequency: { white: {}, red: {} },
-                    last_updated: null
-                };
-                
-                logDebug('Using fallback empty data structure');
-            }
-        }
         
         function getCurrentLunarPhase() {
             const now = new Date();
-            const newMoon = new Date('2024-01-11'); // Reference new moon
-            const lunarCycle = 29.53059; // days
+            const newMoon = new Date('2024-01-11');
+            const lunarCycle = 29.53059;
             const daysSinceNew = (now - newMoon) / (1000 * 60 * 60 * 24);
             const phase = (daysSinceNew % lunarCycle) / lunarCycle;
-            return Math.floor(phase * 8); // 8 lunar phases
+            return Math.floor(phase * 8);
         }
         
         function calculateLunarNumbers() {
@@ -533,7 +502,6 @@
                 if (!whites.includes(num)) whites.push(num);
             }
             
-            // Fill remaining if duplicates occurred
             while (whites.length < 5) {
                 const num = Math.floor((phase * whites.length * 13) % 69) + 1;
                 if (!whites.includes(num)) whites.push(num);
@@ -560,7 +528,6 @@
                 if (!whites.includes(num)) whites.push(num);
             }
             
-            // Fill remaining
             while (whites.length < 5) {
                 const num = (FIBONACCI_SEQUENCE[(startIndex + whites.length) % FIBONACCI_SEQUENCE.length] * 2) % 69 + 1;
                 if (!whites.includes(num)) whites.push(num);
@@ -585,7 +552,6 @@
                 if (!whites.includes(num)) whites.push(num);
             }
             
-            // Fill remaining
             while (whites.length < 5) {
                 const num = Math.floor((GOLDEN_RATIO * whites.length * timestamp) % 69) + 1;
                 if (!whites.includes(num)) whites.push(num);
@@ -615,7 +581,6 @@
                 }
             }
             
-            // Fill remaining
             while (whites.length < 5) {
                 const digit = parseInt(PI_DIGITS[(startIndex + whites.length) % PI_DIGITS.length]);
                 const num = (digit * 7 + whites.length * 3) % 69 + 1;
@@ -647,7 +612,6 @@
                 if (!whites.includes(num)) whites.push(num);
             }
             
-            // Fill remaining
             while (whites.length < 5) {
                 const num = ((gematriaSum + whites.length * 11) % 69) + 1;
                 if (!whites.includes(num)) whites.push(num);
@@ -664,8 +628,8 @@
         
         function calculateKabbalahNumbers() {
             const now = new Date();
-            const sephirot = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // Tree of Life
-            const paths = 22; // Hebrew letters/paths
+            const sephirot = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            const paths = 22;
             
             const dayOfMonth = now.getDate();
             const month = now.getMonth() + 1;
@@ -677,7 +641,6 @@
                 if (!whites.includes(num)) whites.push(num);
             }
             
-            // Fill remaining
             while (whites.length < 5) {
                 const num = ((paths * month + whites.length * 7) % 69) + 1;
                 if (!whites.includes(num)) whites.push(num);
@@ -697,8 +660,7 @@
             const hour = now.getHours();
             const minute = now.getMinutes();
             
-            // Angel number patterns: 111, 222, 333, etc.
-            const angelPattern = Math.floor(hour / 3) + 1; // 1-8
+            const angelPattern = Math.floor(hour / 3) + 1;
             const repeatingDigit = angelPattern;
             
             const whites = [];
@@ -707,7 +669,6 @@
                 if (!whites.includes(num)) whites.push(num);
             }
             
-            // Fill remaining
             while (whites.length < 5) {
                 const num = ((repeatingDigit * whites.length * 7 + hour) % 69) + 1;
                 if (!whites.includes(num)) whites.push(num);
@@ -727,16 +688,14 @@
             const year = now.getFullYear();
             const dayOfYear = Math.floor((now - new Date(year, 0, 0)) / 86400000);
             
-            // I Ching has 64 hexagrams
             const hexagram = (dayOfYear % 64) + 1;
             
             const whites = [];
             for (let i = 1; i <= 5; i++) {
-                const num = ((hexagram * i * 6) % 69) + 1; // 6 lines per hexagram
+                const num = ((hexagram * i * 6) % 69) + 1;
                 if (!whites.includes(num)) whites.push(num);
             }
             
-            // Fill remaining
             while (whites.length < 5) {
                 const num = ((hexagram + whites.length * 8) % 69) + 1;
                 if (!whites.includes(num)) whites.push(num);
@@ -771,7 +730,6 @@
                 };
             }
             
-            // Check if frequency data has any non-zero values
             const whiteEntries = Object.entries(LOTTERY_DATA.frequency.white || {});
             const redEntries = Object.entries(LOTTERY_DATA.frequency.red || {});
             
@@ -800,12 +758,10 @@
                 };
             }
             
-            // Get most frequent white numbers
             const whiteFreq = Object.entries(LOTTERY_DATA.frequency.white)
                 .map(([num, freq]) => ({ num: parseInt(num), freq: parseInt(freq) }))
                 .sort((a, b) => b.freq - a.freq);
             
-            // Get most frequent red numbers
             const redFreq = Object.entries(LOTTERY_DATA.frequency.red)
                 .map(([num, freq]) => ({ num: parseInt(num), freq: parseInt(freq) }))
                 .sort((a, b) => b.freq - a.freq);
@@ -816,11 +772,9 @@
             let whites, red;
             
             if (useHot) {
-                // Use hot numbers (most frequent)
                 whites = whiteFreq.slice(0, 5).map(item => item.num);
                 red = redFreq[0]?.num || 1;
             } else {
-                // Use cold numbers (least frequent)
                 whites = whiteFreq.slice(-5).map(item => item.num);
                 red = redFreq[redFreq.length - 1]?.num || 26;
             }
@@ -847,10 +801,9 @@
         function calculateSacredGeometry() {
             const now = new Date();
             
-            // Sacred ratios and constants
-            const vesicaPiscis = 1.732; // √3
-            const pentagram = 1.618; // Golden ratio in pentagon
-            const platonic = 5; // Number of Platonic solids
+            const vesicaPiscis = 1.732;
+            const pentagram = 1.618;
+            const platonic = 5;
             
             const dayOfMonth = now.getDate();
             
@@ -862,7 +815,6 @@
                 if (!whites.includes(num)) whites.push(num);
             }
             
-            // Fill remaining
             while (whites.length < 5) {
                 const num = Math.floor((platonic * whites.length * dayOfMonth) % 69) + 1;
                 if (!whites.includes(num)) whites.push(num);
@@ -907,7 +859,6 @@
                             logDebug(`Calculating method: ${method.name}`);
                             const result = method.func();
                             
-                            // Check if this method won anything
                             let winStatus = '';
                             if (LATEST_WINNING_NUMBERS) {
                                 const win = checkWinnings(
@@ -975,7 +926,6 @@
             }, 1500);
         }
         
-        // Load lottery data and generate initial numbers on load
         window.onload = async function() {
             logDebug('App starting up');
             try {
