@@ -1,852 +1,1981 @@
 <!DOCTYPE html>
 <html lang="en">
-   <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Powerball Mathematical Oracle</title>
-      <style>
-         * {
-         margin: 0;
-         padding: 0;
-         box-sizing: border-box;
-         }
-         body {
-         font-family: 'Courier New', monospace;
-         background: linear-gradient(135deg, #1a1a1a 0%, #2d2d3a 50%, #3a3a4e 100%);
-         color: #7fb069;
-         min-height: 100vh;
-         padding: 10px;
-         }
-         .container {
-         max-width: 400px;
-         margin: 0 auto;
-         background: rgba(0, 0, 0, 0.6);
-         border: 2px solid #7fb069;
-         border-radius: 10px;
-         padding: 20px;
-         box-shadow: 0 0 20px rgba(127, 176, 105, 0.3);
-         }
-         h1 {
-         text-align: center;
-         margin-bottom: 20px;
-         color: #ffffff;
-         text-shadow: 0 0 10px #7fb069;
-         font-size: 1.5em;
-         }
-         .generate-btn {
-         width: 100%;
-         padding: 15px;
-         background: linear-gradient(45deg, #ff6b35, #f7941d);
-         border: none;
-         border-radius: 8px;
-         color: white;
-         font-weight: bold;
-         font-size: 1.1em;
-         cursor: pointer;
-         margin-bottom: 20px;
-         transition: all 0.3s ease;
-         }
-         .generate-btn:hover {
-         transform: translateY(-2px);
-         box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
-         }
-         /* Latest Winning Numbers Styling */
-         .latest-numbers {
-         background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
-         border: 2px solid #ffd700;
-         border-radius: 12px;
-         padding: 20px;
-         margin-bottom: 25px;
-         text-align: center;
-         box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
-         }
-         .latest-numbers h3 {
-         color: #ffd700;
-         margin-bottom: 15px;
-         font-size: 1.2em;
-         text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
-         }
-         .winning-numbers {
-         display: flex;
-         justify-content: center;
-         gap: 10px;
-         flex-wrap: wrap;
-         margin: 15px 0;
-         }
-         .winning-date {
-         color: #ccc;
-         font-size: 0.9em;
-         margin-top: 10px;
-         font-weight: bold;
-         }
-         /* Method Groups */
-         .method-group {
-         margin-bottom: 15px;
-         background: rgba(127, 176, 105, 0.05);
-         border-left: 3px solid #7fb069;
-         padding: 15px;
-         border-radius: 8px;
-         transition: all 0.3s ease;
-         }
-         .method-group:hover {
-         background: rgba(127, 176, 105, 0.1);
-         transform: translateX(5px);
-         }
-         .method-title {
-         color: #7fb069;
-         font-weight: bold;
-         margin-bottom: 8px;
-         font-size: 1em;
-         }
-         .numbers {
-         display: flex;
-         gap: 8px;
-         flex-wrap: wrap;
-         margin-bottom: 8px;
-         }
-         .white-ball {
-         background: linear-gradient(135deg, #ffffff, #f0f0f0);
-         color: #333;
-         padding: 10px 12px;
-         border-radius: 50%;
-         font-weight: bold;
-         font-size: 0.9em;
-         min-width: 38px;
-         text-align: center;
-         box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-         }
-         .red-ball {
-         background: linear-gradient(135deg, #dc143c, #b71c1c);
-         color: white;
-         padding: 10px 12px;
-         border-radius: 50%;
-         font-weight: bold;
-         font-size: 0.9em;
-         min-width: 38px;
-         text-align: center;
-         box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-         }
-         .calculation-note {
-         font-size: 0.75em;
-         color: #888;
-         font-style: italic;
-         margin-bottom: 5px;
-         }
-         /* Winning Status Styling */
-         .winning-status {
-         margin-top: 8px;
-         padding: 6px 12px;
-         border-radius: 6px;
-         font-size: 0.85em;
-         font-weight: bold;
-         text-align: center;
-         transition: all 0.3s ease;
-         }
-         .win-jackpot {
-         background: linear-gradient(45deg, #ffd700, #ffed4e);
-         color: #000;
-         animation: flash 1s infinite;
-         border: 2px solid #fff;
-         box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
-         }
-         .win-million {
-         background: linear-gradient(45deg, #c0392b, #e74c3c);
-         color: white;
-         box-shadow: 0 0 10px rgba(192, 57, 43, 0.6);
-         }
-         .win-large {
-         background: linear-gradient(45deg, #27ae60, #2ecc71);
-         color: white;
-         box-shadow: 0 0 10px rgba(39, 174, 96, 0.6);
-         }
-         .win-medium {
-         background: linear-gradient(45deg, #2980b9, #3498db);
-         color: white;
-         box-shadow: 0 0 10px rgba(41, 128, 185, 0.6);
-         }
-         .win-small {
-         background: linear-gradient(45deg, #8e44ad, #9b59b6);
-         color: white;
-         box-shadow: 0 0 10px rgba(142, 68, 173, 0.6);
-         }
-         .win-none {
-         background: #444;
-         color: #999;
-         border: 1px solid #666;
-         }
-         @keyframes flash {
-         0%, 50% { opacity: 1; transform: scale(1); }
-         25%, 75% { opacity: 0.7; transform: scale(1.05); }
-         }
-         /* Debug and Error Boxes */
-         .error-box {
-         background: rgba(220, 20, 60, 0.1);
-         border: 1px solid #dc143c;
-         border-radius: 5px;
-         padding: 12px;
-         margin-bottom: 15px;
-         color: #ff6b6b;
-         font-size: 0.85em;
-         }
-         .error-box h4 {
-         margin: 0 0 8px 0;
-         color: #dc143c;
-         }
-         .debug-box {
-         background: rgba(70, 130, 180, 0.1);
-         border: 1px solid #4682b4;
-         border-radius: 5px;
-         padding: 12px;
-         margin-bottom: 15px;
-         color: #87ceeb;
-         font-size: 0.8em;
-         font-family: monospace;
-         }
-         .debug-box h4 {
-         margin: 0 0 8px 0;
-         color: #4682b4;
-         }
-         .toggle-btn {
-         background: #666;
-         color: white;
-         border: none;
-         padding: 8px 12px;
-         border-radius: 4px;
-         font-size: 0.8em;
-         cursor: pointer;
-         margin: 0 5px;
-         transition: all 0.3s ease;
-         }
-         .toggle-btn:hover {
-         background: #888;
-         transform: translateY(-1px);
-         }
-         .loading {
-         text-align: center;
-         color: #7fb069;
-         font-style: italic;
-         font-size: 1.1em;
-         padding: 20px;
-         }
-         .timestamp {
-         text-align: center;
-         color: #666;
-         font-size: 0.8em;
-         margin-top: 20px;
-         border-top: 1px solid #333;
-         padding-top: 15px;
-         line-height: 1.4;
-         }
-         /* Responsive Design */
-         @media (max-width: 480px) {
-         .container {
-         margin: 5px;
-         padding: 15px;
-         }
-         .numbers {
-         justify-content: center;
-         }
-         .white-ball, .red-ball {
-         min-width: 35px;
-         padding: 8px 10px;
-         font-size: 0.85em;
-         }
-         }
-      </style>
-   </head>
-   <body>
-      <div class="container">
-         <h1>🔮 Mathematical Oracle 🔮</h1>
-         <div style="text-align: center; margin-bottom: 15px;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Powerball Mathematical Oracle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d3a 50%, #3a3a4e 100%);
+            color: #7fb069;
+            min-height: 100vh;
+            padding: 10px;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #7fb069;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(127, 176, 105, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffffff;
+            text-shadow: 0 0 10px #7fb069;
+            font-size: 1.5em;
+        }
+        
+        .generate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #ff6b35, #f7941d);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+        }
+        
+        .latest-numbers {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .latest-numbers h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+        }
+        
+        .winning-numbers {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        
+        .winning-date {
+            color: #ccc;
+            font-size: 0.9em;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .method-group {
+            margin-bottom: 15px;
+            background: rgba(127, 176, 105, 0.05);
+            border-left: 3px solid #7fb069;
+            padding: 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .method-group:hover {
+            background: rgba(127, 176, 105, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .method-title {
+            color: #7fb069;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+        
+        .numbers {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        
+        .white-ball {
+            background: linear-gradient(135deg, #ffffff, #f0f0f0);
+            color: #333;
+            padding: 10px 12px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 0.9em;
+            min-width: 38px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .red-ball {
+            background: linear-gradient(135deg, #dc143c, #b71c1c);
+            color: white;
+            padding: 10px 12px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 0.9em;
+            min-width: 38px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .calculation-note {
+            font-size: 0.75em;
+            color: #888;
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+        
+        .winning-status {
+            margin-top: 8px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .win-jackpot {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #000;
+            animation: flash 1s infinite;
+            border: 2px solid #fff;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+        }
+        
+        .win-million {
+            background: linear-gradient(45deg, #c0392b, #e74c3c);
+            color: white;
+            box-shadow: 0 0 10px rgba(192, 57, 43, 0.6);
+        }
+        
+        .win-large {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+            box-shadow: 0 0 10px rgba(39, 174, 96, 0.6);
+        }
+        
+        .win-medium {
+            background: linear-gradient(45deg, #2980b9, #3498db);
+            color: white;
+            box-shadow: 0 0 10px rgba(41, 128, 185, 0.6);
+        }
+        
+        .win-small {
+            background: linear-gradient(45deg, #8e44ad, #9b59b6);
+            color: white;
+            box-shadow: 0 0 10px rgba(142, 68, 173, 0.6);
+        }
+        
+        .win-none {
+            background: #444;
+            color: #999;
+            border: 1px solid #666;
+        }
+        
+        @keyframes flash {
+            0%, 50% { opacity: 1; transform: scale(1); }
+            25%, 75% { opacity: 0.7; transform: scale(1.05); }
+        }
+        
+        .error-box {
+            background: rgba(220, 20, 60, 0.1);
+            border: 1px solid #dc143c;
+            border-radius: 5px;
+            padding: 12px;
+            margin-bottom: 15px;
+            color: #ff6b6b;
+            font-size: 0.85em;
+        }
+        
+        .error-box h4 {
+            margin: 0 0 8px 0;
+            color: #dc143c;
+        }
+        
+        .debug-box {
+            background: rgba(70, 130, 180, 0.1);
+            border: 1px solid #4682b4;
+            border-radius: 5px;
+            padding: 12px;
+            margin-bottom: 15px;
+            color: #87ceeb;
+            font-size: 0.8em;
+            font-family: monospace;
+        }
+        
+        .debug-box h4 {
+            margin: 0 0 8px 0;
+            color: #4682b4;
+        }
+        
+        .toggle-btn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-btn:hover {
+            background: #888;
+            transform: translateY(-1px);
+        }
+        
+        .loading {
+            text-align: center;
+            color: #7fb069;
+            font-style: italic;
+            font-size: 1.1em;
+            padding: 20px;
+        }
+        
+        .timestamp {
+            text-align: center;
+            color: #666;
+            font-size: 0.8em;
+            margin-top: 20px;
+            border-top: 1px solid #333;
+            padding-top: 15px;
+            line-height: 1.4;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                margin: 5px;
+                padding: 15px;
+            }
+            
+            .numbers {
+                justify-content: center;
+            }
+            
+            .white-ball, .red-ball {
+                min-width: 35px;
+                padding: 8px 10px;
+                font-size: 0.85em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔮 Mathematical Oracle 🔮</h1>
+        
+        <div style="text-align: center; margin-bottom: 15px;">
             <button class="toggle-btn" onclick="toggleDebug()">🔍 Debug Info</button>
             <button class="toggle-btn" onclick="toggleErrors()">🚨 Error Log</button>
-         </div>
-         <div id="error-status" class="error-box" style="display: none;"></div>
-         <div id="debug-info" class="debug-box" style="display: none;"></div>
-         <button class="generate-btn" onclick="generateAllMethods()">
-         ⚡ Generate Divine Numbers ⚡
-         </button>
-         <!-- Latest Winning Numbers Display -->
-         <div id="latest-winning" class="latest-numbers" style="display: none;">
+        </div>
+        
+        <div id="error-status" class="error-box" style="display: none;"></div>
+        <div id="debug-info" class="debug-box" style="display: none;"></div>
+        
+        <button class="generate-btn" onclick="generateAllMethods()">
+            ⚡ Generate Divine Numbers ⚡
+        </button>
+        
+        <div id="latest-winning" class="latest-numbers" style="display: none;">
             <h3>🎯 Latest Winning Numbers</h3>
             <div id="winning-display" class="winning-numbers"></div>
             <div id="winning-date" class="winning-date"></div>
-         </div>
-         <div id="results"></div>
-         <div class="timestamp" id="timestamp"></div>
-      </div>
+        </div>
+        
+        <div id="results"></div>
+        
+        <div class="timestamp" id="timestamp"></div>
+    </div>
 
-       <script>
-      // Mathematical constants and data
-      const PI_DIGITS = "31415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679";
-      const FIBONACCI_SEQUENCE = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765];
-      const GOLDEN_RATIO = 1.618033988749;
-      // Gematria values (simplified Hebrew)
-      const GEMATRIA_VALUES = {
-      'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'I': 9, 'J': 10,
-      'K': 20, 'L': 30, 'M': 40, 'N': 50, 'O': 60, 'P': 70, 'Q': 80, 'R': 90, 'S': 100,
-      'T': 200, 'U': 300, 'V': 400, 'W': 500, 'X': 600, 'Y': 700, 'Z': 800
-      };
-      // Live lottery data and error tracking
-      let LOTTERY_DATA = null;
-      let ERROR_LOG = [];
-      let DEBUG_INFO = [];
-      let LATEST_WINNING_NUMBERS = null;
-      function checkWinnings(myWhite, myRed, winningWhite, winningRed) {
-      const whiteMatches = myWhite.filter(num => winningWhite.includes(num)).length;
-      const redMatch = myRed === winningRed;
-      if (whiteMatches === 5 && redMatch) {
-      return { prize: "JACKPOT! 🎰💰", amount: "Jackpot", class: "jackpot" };
-      } else if (whiteMatches === 5 && !redMatch) {
-      return { prize: "🎉 $1,000,000", amount: "$1,000,000", class: "million" };
-      } else if (whiteMatches === 4 && redMatch) {
-      return { prize: "🎉 $50,000", amount: "$50,000", class: "large" };
-      } else if (whiteMatches === 4 && !redMatch) {
-      return { prize: "🎉 $100", amount: "$100", class: "medium" };
-      } else if (whiteMatches === 3 && redMatch) {
-      return { prize: "🎉 $100", amount: "$100", class: "medium" };
-      } else if (whiteMatches === 3 && !redMatch) {
-      return { prize: "🎉 $7", amount: "$7", class: "small" };
-      } else if (whiteMatches === 2 && redMatch) {
-      return { prize: "🎉 $7", amount: "$7", class: "small" };
-      } else if (whiteMatches === 1 && redMatch) {
-      return { prize: "🎉 $4", amount: "$4", class: "small" };
-      } else if (whiteMatches === 0 && redMatch) {
-      return { prize: "🎉 $4", amount: "$4", class: "small" };
-      } else {
-      return { prize: "No win", amount: "$0", class: "none" };
-      }
-      }
-      function getLatestWinningNumbers() {
-      if (!LOTTERY_DATA || !LOTTERY_DATA.results || LOTTERY_DATA.results.length === 0) {
-      return null;
-      }
-      const latest = LOTTERY_DATA.results[0];
-      return {
-      white: latest.white,
-      red: latest.red,
-      date: latest.date,
-      jackpot: latest.jackpot
-      };
-      }
-      function logError(message, details = null) {
-      const timestamp = new Date().toLocaleString();
-      ERROR_LOG.push({ timestamp, message, details });
-      console.error(`[${timestamp}] ${message}`, details);
-      updateErrorDisplay();
-      }
-      function logDebug(message, data = null) {
-      const timestamp = new Date().toLocaleString();
-      DEBUG_INFO.push({ timestamp, message, data });
-      console.log(`[${timestamp}] ${message}`, data);
-      updateDebugDisplay();
-      }
-      function updateErrorDisplay() {
-      const errorBox = document.getElementById('error-status');
-      if (ERROR_LOG.length === 0) {
-      errorBox.style.display = 'none';
-      return;
-      }
-      const recent = ERROR_LOG.slice(-5);
-      let html = '
-      <h4>🚨 Error Status</h4>
-      ';
-      recent.forEach(error => {
-      html += `
-      <div><strong>${error.timestamp}:</strong> ${error.message}</div>
-      `;
-      if (error.details) {
-      html += `
-      <div style="font-size: 0.8em; color: #999; margin-left: 10px;">${JSON.stringify(error.details)}</div>
-      `;
-      }
-      });
-      errorBox.innerHTML = html;
-      }
-      function updateDebugDisplay() {
-      const debugBox = document.getElementById('debug-info');
-      if (DEBUG_INFO.length === 0) return;
-      const recent = DEBUG_INFO.slice(-10);
-      let html = '
-      <h4>🔍 Debug Information</h4>
-      ';
-      recent.forEach(debug => {
-      html += `
-      <div><strong>${debug.timestamp}:</strong> ${debug.message}</div>
-      `;
-      if (debug.data) {
-      html += `
-      <div style="font-size: 0.8em; color: #999; margin-left: 10px;">${JSON.stringify(debug.data, null, 2)}</div>
-      `;
-      }
-      });
-      debugBox.innerHTML = html;
-      }
-      function toggleDebug() {
-      const debugBox = document.getElementById('debug-info');
-      debugBox.style.display = debugBox.style.display === 'none' ? 'block' : 'none';
-      }
-      function toggleErrors() {
-      const errorBox = document.getElementById('error-status');
-      errorBox.style.display = errorBox.style.display === 'none' ? 'block' : 'none';
-      }
-      async function loadLotteryData() {
-      try {
-      logDebug('Starting lottery data load');
-      const response = await fetch('lottery-data.json');
-      logDebug('Fetch response status', { status: response.status, ok: response.ok });
-      if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const text = await response.text();
-      logDebug('Raw response length', { length: text.length, preview: text.substring(0, 100) });
-      if (!text.trim()) {
-      throw new Error('Empty response from lottery-data.json');
-      }
-      LOTTERY_DATA = JSON.parse(text);
-      logDebug('Parsed lottery data', {
-      resultsCount: LOTTERY_DATA.results?.length || 0,
-      lastUpdated: LOTTERY_DATA.last_updated,
-      hasFrequency: !!LOTTERY_DATA.frequency
-      });
-      LATEST_WINNING_NUMBERS = getLatestWinningNumbers();
-      if (LATEST_WINNING_NUMBERS) {
-      logDebug('Latest winning numbers loaded', LATEST_WINNING_NUMBERS);
-      displayLatestWinningNumbers();
-      }
-      if (!LOTTERY_DATA.results) {
-      LOTTERY_DATA.results = [];
-      logError('No results array in lottery data, created empty array');
-      }
-      if (!LOTTERY_DATA.frequency) {
-      LOTTERY_DATA.frequency = { white: {}, red: {} };
-      logError('No frequency data found, created empty frequency object');
-      }
-      console.log(`✅ Loaded ${LOTTERY_DATA.results.length} lottery results`);
-      } catch (error) {
-      logError('Failed to load lottery data', {
-      error: error.message,
-      stack: error.stack
-      });
-      try {
-      const testResponse = await fetch('lottery-data.json', { method: 'HEAD' });
-      logDebug('File existence check', { exists: testResponse.ok, status: testResponse.status });
-      } catch (headError) {
-      logError('File does not exist or network error', { error: headError.message });
-      }
-      LOTTERY_DATA = {
-      results: [],
-      frequency: { white: {}, red: {} },
-      last_updated: null
-      };
-      logDebug('Using fallback empty data structure');
-      }
-      }
-      function displayLatestWinningNumbers() {
-      const latestDiv = document.getElementById('latest-winning');
-      const displayDiv = document.getElementById('winning-display');
-      const dateDiv = document.getElementById('winning-date');
-      if (!LATEST_WINNING_NUMBERS) {
-      latestDiv.style.display = 'none';
-      return;
-      }
-      const { white, red, date, jackpot } = LATEST_WINNING_NUMBERS;
-      let html = '';
-      white.forEach(num => {
-      html += `<span class="white-ball">${num}</span>`;
-      });
-      html += `<span class="red-ball">${red}</span>`;
-      displayDiv.innerHTML = html;
-      const formattedDate = new Date(date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-      });
-      const jackpotFormatted = jackpot && jackpot !== "0" ? 
-      `$${parseInt(jackpot).toLocaleString()}` : 
-      'Unknown';
-      dateDiv.innerHTML = `Drawing: ${formattedDate}<br>Estimated Jackpot: ${jackpotFormatted}`;
-      latestDiv.style.display = 'block';
-      }
-      function getCurrentLunarPhase() {
-      const now = new Date();
-      const newMoon = new Date('2024-01-11');
-      const lunarCycle = 29.53059;
-      const daysSinceNew = (now - newMoon) / (1000 * 60 * 60 * 24);
-      const phase = (daysSinceNew % lunarCycle) / lunarCycle;
-      return Math.floor(phase * 8);
-      }
-      function calculateLunarNumbers() {
-      const phase = getCurrentLunarPhase();
-      const now = new Date();
-      const lunarDay = now.getDate() + phase;
-      const whites = [];
-      for (let i = 0; i < 5; i++) {
-      const num = ((lunarDay * (i + 1) * 7) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      while (whites.length < 5) {
-      const num = Math.floor((phase * whites.length * 13) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      const red = (phase * 3 + now.getDate()) % 26 + 1;
-      return {
-      whites: whites.slice(0, 5).sort((a, b) => a - b),
-      red: red,
-      note: `🌙 Dynamic - Lunar Phase: ${phase}/8, Lunar influence: ${lunarDay}`
-      };
-      }
-      function calculateFibonacciNumbers() {
-      const now = new Date();
-      const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
-      const startIndex = dayOfYear % 15;
-      const whites = [];
-      for (let i = 0; i < 5; i++) {
-      const fibIndex = (startIndex + i) % FIBONACCI_SEQUENCE.length;
-      const num = (FIBONACCI_SEQUENCE[fibIndex] % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      while (whites.length < 5) {
-      const num = (FIBONACCI_SEQUENCE[(startIndex + whites.length) % FIBONACCI_SEQUENCE.length] * 2) % 69 + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      const red = (FIBONACCI_SEQUENCE[startIndex % FIBONACCI_SEQUENCE.length] % 26) + 1;
-      return {
-      whites: whites.slice(0, 5).sort((a, b) => a - b),
-      red: red,
-      note: `🌀 Static - Fibonacci sequence starting at index ${startIndex}`
-      };
-      }
-      function calculateGoldenRatioNumbers() {
-      const now = new Date();
-      const timestamp = now.getTime();
-      const whites = [];
-      for (let i = 1; i <= 5; i++) {
-      const num = Math.floor((GOLDEN_RATIO * timestamp * i) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      while (whites.length < 5) {
-      const num = Math.floor((GOLDEN_RATIO * whites.length * timestamp) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      const red = Math.floor((GOLDEN_RATIO * timestamp) % 26) + 1;
-      return {
-      whites: whites.slice(0, 5).sort((a, b) => a - b),
-      red: red,
-      note: `✨ Hourly - Golden Ratio φ = ${GOLDEN_RATIO.toFixed(6)}`
-      };
-      }
-      function calculatePiNumbers() {
-      const now = new Date();
-      const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
-      const startIndex = dayOfYear % (PI_DIGITS.length - 10);
-      const whites = [];
-      for (let i = 0; i < 10; i++) {
-      const digit1 = parseInt(PI_DIGITS[startIndex + i]);
-      const digit2 = parseInt(PI_DIGITS[startIndex + i + 1]);
-      const num = (digit1 * 10 + digit2) % 69 + 1;
-      if (!whites.includes(num) && whites.length < 5) {
-      whites.push(num);
-      }
-      }
-      while (whites.length < 5) {
-      const digit = parseInt(PI_DIGITS[(startIndex + whites.length) % PI_DIGITS.length]);
-      const num = (digit * 7 + whites.length * 3) % 69 + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      const redDigit = parseInt(PI_DIGITS[startIndex % PI_DIGITS.length]);
-      const red = (redDigit * 3) % 26 + 1;
-      return {
-      whites: whites.slice(0, 5).sort((a, b) => a - b),
-      red: red,
-      note: `🔢 Daily - π digits starting at position ${startIndex}`
-      };
-      }
-      function calculateGematriaNumbers() {
-      const now = new Date();
-      const dateString = now.toDateString().toUpperCase().replace(/[^A-Z]/g, '');
-      let gematriaSum = 0;
-      for (let char of dateString) {
-      gematriaSum += GEMATRIA_VALUES[char] || 0;
-      }
-      const whites = [];
-      for (let i = 1; i <= 5; i++) {
-      const num = ((gematriaSum * i) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      while (whites.length < 5) {
-      const num = ((gematriaSum + whites.length * 11) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      const red = (gematriaSum % 26) + 1;
-      return {
-      whites: whites.slice(0, 5).sort((a, b) => a - b),
-      red: red,
-      note: `📜 Daily - Gematria sum of "${dateString}": ${gematriaSum}`
-      };
-      }
-      function calculateKabbalahNumbers() {
-      const now = new Date();
-      const sephirot = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      const paths = 22;
-      const dayOfMonth = now.getDate();
-      const month = now.getMonth() + 1;
-      const whites = [];
-      for (let i = 0; i < 5; i++) {
-      const sephira = sephirot[i % 10];
-      const num = ((sephira * dayOfMonth * (i + 1)) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      while (whites.length < 5) {
-      const num = ((paths * month + whites.length * 7) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      const red = ((paths + dayOfMonth) % 26) + 1;
-      return {
-      whites: whites.slice(0, 5).sort((a, b) => a - b),
-      red: red,
-      note: `🌳 Daily - Tree of Life: 10 Sephirot, 22 Paths, Day: ${dayOfMonth}`
-      };
-      }
-      function calculateAngelNumbers() {
-      const now = new Date();
-      const hour = now.getHours();
-      const minute = now.getMinutes();
-      const angelPattern = Math.floor(hour / 3) + 1;
-      const repeatingDigit = angelPattern;
-      const whites = [];
-      for (let i = 1; i <= 5; i++) {
-      const num = ((repeatingDigit * 11 * i + minute) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      while (whites.length < 5) {
-      const num = ((repeatingDigit * whites.length * 7 + hour) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      const red = ((repeatingDigit * 3 + minute) % 26) + 1;
-      return {
-      whites: whites.slice(0, 5).sort((a, b) => a - b),
-      red: red,
-      note: `👼 Hourly - Angel pattern: ${repeatingDigit}${repeatingDigit}${repeatingDigit}, Time: ${hour}:${minute}`
-      };
-      }
-      function calculateIChing() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const dayOfYear = Math.floor((now - new Date(year, 0, 0)) / 86400000);
-      const hexagram = (dayOfYear % 64) + 1;
-      const whites = [];
-      for (let i = 1; i <= 5; i++) {
-      const num = ((hexagram * i * 6) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      while (whites.length < 5) {
-      const num = ((hexagram + whites.length * 8) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      const red = (hexagram % 26) + 1;
-      return {
-      whites: whites.slice(0, 5).sort((a, b) => a - b),
-      red: red,
-      note: `☯ Daily - I Ching Hexagram: ${hexagram}/64, Day: ${dayOfYear}`
-      };
-      }
-      function calculateFrequencyAnalysis() {
-      logDebug('Starting frequency analysis', {
-      hasLotteryData: !!LOTTERY_DATA,
-      hasFrequency: !!LOTTERY_DATA?.frequency,
-      resultsCount: LOTTERY_DATA?.results?.length || 0
-      });
-      if (!LOTTERY_DATA || !LOTTERY_DATA.frequency) {
-      logError('No lottery data available for frequency analysis', {
-      lotteryDataExists: !!LOTTERY_DATA,
-      frequencyExists: !!LOTTERY_DATA?.frequency
-      });
-      return {
-      whites: [6, 8, 20, 26, 32].sort((a, b) => a - b),
-      red: 13,
-      note: `📊 Error - No lottery data available. Check error log for details.`
-      };
-      }
-      const whiteEntries = Object.entries(LOTTERY_DATA.frequency.white || {});
-      const redEntries = Object.entries(LOTTERY_DATA.frequency.red || {});
-      const totalWhiteFreq = whiteEntries.reduce((sum, [, freq]) => sum + parseInt(freq || 0), 0);
-      const totalRedFreq = redEntries.reduce((sum, [, freq]) => sum + parseInt(freq || 0), 0);
-      logDebug('Frequency analysis data', {
-      whiteEntriesCount: whiteEntries.length,
-      redEntriesCount: redEntries.length,
-      totalWhiteFreq,
-      totalRedFreq,
-      sampleWhiteFreq: Object.fromEntries(whiteEntries.slice(0, 5))
-      });
-      if (totalWhiteFreq === 0 || totalRedFreq === 0) {
-      logError('Frequency data is empty or all zeros', {
-      totalWhiteFreq,
-      totalRedFreq,
-      resultsCount: LOTTERY_DATA.results?.length
-      });
-      return {
-      whites: [1, 15, 30, 45, 60].sort((a, b) => a - b),
-      red: 1,
-      note: `📊 Error - Frequency data is empty. Results: ${LOTTERY_DATA.results?.length || 0}`
-      };
-      }
-      const whiteFreq = Object.entries(LOTTERY_DATA.frequency.white)
-      .map(([num, freq]) => ({ num: parseInt(num), freq: parseInt(freq) }))
-      .sort((a, b) => b.freq - a.freq);
-      const redFreq = Object.entries(LOTTERY_DATA.frequency.red)
-      .map(([num, freq]) => ({ num: parseInt(num), freq: parseInt(freq) }))
-      .sort((a, b) => b.freq - a.freq);
-      const now = new Date();
-      const useHot = now.getDate() % 2 === 0;
-      let whites, red;
-      if (useHot) {
-      whites = whiteFreq.slice(0, 5).map(item => item.num);
-      red = redFreq[0]?.num || 1;
-      } else {
-      whites = whiteFreq.slice(-5).map(item => item.num);
-      red = redFreq[redFreq.length - 1]?.num || 26;
-      }
-      const totalDrawings = LOTTERY_DATA.results.length;
-      const lastUpdate = LOTTERY_DATA.last_updated ? 
-      new Date(LOTTERY_DATA.last_updated).toLocaleDateString() : 'Unknown';
-      logDebug('Frequency analysis result', {
-      useHot,
-      whites,
-      red,
-      totalDrawings,
-      lastUpdate
-      });
-      return {
-      whites: whites.sort((a, b) => a - b),
-      red: red,
-      note: `📊 Dynamic - ${useHot ? 'Hot' : 'Cold'} numbers from ${totalDrawings} drawings (Updated: ${lastUpdate})`
-      };
-      }
-      function calculateSacredGeometry() {
-      const now = new Date();
-      const vesicaPiscis = 1.732;
-      const pentagram = 1.618;
-      const platonic = 5;
-      const dayOfMonth = now.getDate();
-      const whites = [];
-      const ratios = [vesicaPiscis, pentagram, Math.PI, Math.E, Math.sqrt(2)];
-      for (let i = 0; i < 5; i++) {
-      const num = Math.floor((ratios[i] * dayOfMonth * (i + 1)) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      while (whites.length < 5) {
-      const num = Math.floor((platonic * whites.length * dayOfMonth) % 69) + 1;
-      if (!whites.includes(num)) whites.push(num);
-      }
-      const red = Math.floor((pentagram * dayOfMonth) % 26) + 1;
-      return {
-      whites: whites.slice(0, 5).sort((a, b) => a - b),
-      red: red,
-      note: `🔺 Daily - Sacred geometry: √3, φ, π, e, √2 on day ${dayOfMonth}`
-      };
-      }
-      function generateAllMethods() {
-      const resultsDiv = document.getElementById('results');
-      const timestampDiv = document.getElementById('timestamp');
-      logDebug('Starting number generation');
-      resultsDiv.innerHTML = '
-      <div class="loading">🔮 Calculating divine mathematics... 🔮</div>
-      ';
-      setTimeout(() => {
-      try {
-      const methods = [
-      { name: '🌙 Lunar Calculations', func: calculateLunarNumbers },
-      { name: '🌀 Fibonacci Sequence', func: calculateFibonacciNumbers },
-      { name: '✨ Golden Ratio', func: calculateGoldenRatioNumbers },
-      { name: '🔢 Pi Sequence', func: calculatePiNumbers },
-      { name: '📜 Gematria', func: calculateGematriaNumbers },
-      { name: '🌳 Kabbalah Tree', func: calculateKabbalahNumbers },
-      { name: '👼 Angel Numbers', func: calculateAngelNumbers },
-      { name: '☯ I Ching', func: calculateIChing },
-      { name: '📊 Frequency Analysis', func: calculateFrequencyAnalysis },
-      { name: '🔺 Sacred Geometry', func: calculateSacredGeometry }
-      ];
-      let html = '';
-      methods.forEach((method, index) => {
-      try {
-      logDebug(`Calculating method: ${method.name}`);
-      const result = method.func();
-      // Check if this method won anything
-      let winStatus = '';
-      if (LATEST_WINNING_NUMBERS) {
-      const win = checkWinnings(
-      result.whites, 
-      result.red, 
-      LATEST_WINNING_NUMBERS.white, 
-      LATEST_WINNING_NUMBERS.red
-      );
-      winStatus = `
-      <div class="winning-status win-${win.class}">${win.prize}</div>
-      `;
-      }
-      html += `
-      <div class="method-group">
-         <div class="method-title">${method.name}</div>
-         <div class="numbers">
-            ${result.whites.map(num => `<span class="white-ball">${num}</span>`).join('')}
-            <span class="red-ball">${result.red}</span>
-         </div>
-         <div class="calculation-note">${result.note}</div>
-         ${winStatus}
-      </div>
-      `;
-      } catch (error) {
-      logError(`Error in method ${method.name}`, {
-      error: error.message,
-      stack: error.stack
-      });
-      html += `
-      <div class="method-group">
-         <div class="method-title">${method.name}</div>
-         <div class="calculation-note" style="color: #dc143c;">Error: ${error.message}</div>
-      </div>
-      `;
-      }
-      });
-      resultsDiv.innerHTML = html;
-      const now = new Date();
-      const dataStatus = LOTTERY_DATA ? 
-      `Data: ${LOTTERY_DATA.results?.length || 0} drawings` : 
-      'Data: Not loaded';
-      timestampDiv.innerHTML = `Generated: ${now.toLocaleString()}<br>${dataStatus}<br>Next lunar phase in ${(29.53 - (getCurrentLunarPhase() * 3.69)).toFixed(1)} days`;
-      logDebug('Number generation completed');
-      } catch (error) {
-      logError('Error during number generation', {
-      error: error.message,
-      stack: error.stack
-      });
-      resultsDiv.innerHTML = `
-      <div class="error-box">
-         <h4>Generation Error</h4>
-         <div>Failed to generate numbers: ${error.message}</div>
-         <div style="margin-top: 10px;">
-            <button class="toggle-btn" onclick="toggleErrors()">Show Error Details</button>
-         </div>
-      </div>
-      `;
-      }
-      }, 1500);
-      }
-      // Initialize the app
-      window.onload = async function() {
-      logDebug('App starting up');
-      try {
-      await loadLotteryData();
-      setTimeout(generateAllMethods, 1000);
-      } catch (error) {
-      logError('Failed to initialize app', {
-      error: error.message,
-      stack: error.stack
-      });
-      }
-      };
-              </script>
+    <script>
+        // Mathematical constants and data
+        const PI_DIGITS = "31415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679";
+        const FIBONACCI_SEQUENCE = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765];
+        const GOLDEN_RATIO = 1.618033988749;
+        
+        // Gematria values (simplified Hebrew)
+        const GEMATRIA_VALUES = {
+            'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'I': 9, 'J': 10,
+            'K': 20, 'L': 30, 'M': 40, 'N': 50, 'O': 60, 'P': 70, 'Q': 80, 'R': 90, 'S': 100,
+            'T': 200, 'U': 300, 'V': 400, 'W': 500, 'X': 600, 'Y': 700, 'Z': 800
+        };
+        
+        // Live lottery data and error tracking
+        let LOTTERY_DATA = null;
+        let ERROR_LOG = [];
+        let DEBUG_INFO = [];
+        let LATEST_WINNING_NUMBERS = null;
+        
+        function checkWinnings(myWhite, myRed, winningWhite, winningRed) {
+            const whiteMatches = myWhite.filter(num => winningWhite.includes(num)).length;
+            const redMatch = myRed === winningRed;
+            
+            if (whiteMatches === 5 && redMatch) {
+                return { prize: "JACKPOT! 🎰💰", amount: "Jackpot", class: "jackpot" };
+            } else if (whiteMatches === 5 && !redMatch) {
+                return { prize: "🎉 $1,000,000", amount: "$1,000,000", class: "million" };
+            } else if (whiteMatches === 4 && redMatch) {
+                return { prize: "🎉 $50,000", amount: "$50,000", class: "large" };
+            } else if (whiteMatches === 4 && !redMatch) {
+                return { prize: "🎉 $100", amount: "$100", class: "medium" };
+            } else if (whiteMatches === 3 && redMatch) {
+                return { prize: "🎉 $100", amount: "$100", class: "medium" };
+            } else if (whiteMatches === 3 && !redMatch) {
+                return { prize: "🎉 $7", amount: "$7", class: "small" };
+            } else if (whiteMatches === 2 && redMatch) {
+                return { prize: "🎉 $7", amount: "$7", class: "small" };
+            } else if (whiteMatches === 1 && redMatch) {
+                return { prize: "🎉 $4", amount: "$4", class: "small" };
+            } else if (whiteMatches === 0 && redMatch) {
+                return { prize: "🎉 $4", amount: "$4", class: "small" };
+            } else {
+                return { prize: "No win", amount: "$0", class: "none" };
+            }
+        }
+        
+        function getLatestWinningNumbers() {
+            if (!LOTTERY_DATA || !LOTTERY_DATA.results || LOTTERY_DATA.results.length === 0) {
+                return null;
+            }
+            
+            const latest = LOTTERY_DATA.results[0];
+            return {
+                white: latest.white,
+                red: latest.red,
+                date: latest.date,
+                jackpot: latest.jackpot
+            };
+        }
+        
+        function logError(message, details = null) {
+            const timestamp = new Date().toLocaleString();
+            ERROR_LOG.push({ timestamp, message, details });
+            console.error(`[${timestamp}] ${message}`, details);
+            updateErrorDisplay();
+        }
+        
+        function logDebug(message, data = null) {
+            const timestamp = new Date().toLocaleString();
+            DEBUG_INFO.push({ timestamp, message, data });
+            console.log(`[${timestamp}] ${message}`, data);
+            updateDebugDisplay();
+        }
+        
+        function updateErrorDisplay() {
+            const errorBox = document.getElementById('error-status');
+            if (ERROR_LOG.length === 0) {
+                errorBox.style.display = 'none';
+                return;
+            }
+            
+            const recent = ERROR_LOG.slice(-5);
+            let html = '<h4>🚨 Error Status</h4>';
+            recent.forEach(error => {
+                html += `<div><strong>${error.timestamp}:</strong> ${error.message}</div>`;
+                if (error.details) {
+                    html += `<div style="font-size: 0.8em; color: #999; margin-left: 10px;">${JSON.stringify(error.details)}</div>`;
+                }
+            });
+            errorBox.innerHTML = html;
+        }
+        
+        function updateDebugDisplay() {
+            const debugBox = document.getElementById('debug-info');
+            if (DEBUG_INFO.length === 0) return;
+            
+            const recent = DEBUG_INFO.slice(-10);
+            let html = '<h4>🔍 Debug Information</h4>';
+            recent.forEach(debug => {
+                html += `<div><strong>${debug.timestamp}:</strong> ${debug.message}</div>`;
+                if (debug.data) {
+                    html += `<div style="font-size: 0.8em; color: #999; margin-left: 10px;">${JSON.stringify(debug.data, null, 2)}</div>`;
+                }
+            });
+            debugBox.innerHTML = html;
+        }
+        
+        function toggleDebug() {
+            const debugBox = document.getElementById('debug-info');
+            debugBox.style.display = debugBox.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function toggleErrors() {
+            const errorBox = document.getElementById('error-status');
+            errorBox.style.display = errorBox.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        async function loadLotteryData() {
+            try {
+                logDebug('Starting lottery data load');
+                
+                const response = await fetch('lottery-data.json');
+                logDebug('Fetch response status', { status: response.status, ok: response.ok });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                logDebug('Raw response length', { length: text.length, preview: text.substring(0, 100) });
+                
+                if (!text.trim()) {
+                    throw new Error('Empty response from lottery-data.json');
+                }
+                
+                LOTTERY_DATA = JSON.parse(text);
+                logDebug('Parsed lottery data', {
+                    resultsCount: LOTTERY_DATA.results?.length || 0,
+                    lastUpdated: LOTTERY_DATA.last_updated,
+                    hasFrequency: !!LOTTERY_DATA.frequency
+                });
+                
+                LATEST_WINNING_NUMBERS = getLatestWinningNumbers();
+                if (LATEST_WINNING_NUMBERS) {
+                    logDebug('Latest winning numbers loaded', LATEST_WINNING_NUMBERS);
+                    displayLatestWinningNumbers();
+                }
+                
+                if (!LOTTERY_DATA.results) {
+                    LOTTERY_DATA.results = [];
+                    logError('No results array in lottery data, created empty array');
+                }
+                
+                if (!LOTTERY_DATA.frequency) {
+                    LOTTERY_DATA.frequency = { white: {}, red: {} };
+                    logError('No frequency data found, created empty frequency object');
+                }
+                
+                console.log(`✅ Loaded ${LOTTERY_DATA.results.length} lottery results`);
+                
+            } catch (error) {
+                logError('Failed to load lottery data', {
+                    error: error.message,
+                    stack: error.stack
+                });
+                
+                try {
+                    const testResponse = await fetch('lottery-data.json', { method: 'HEAD' });
+                    logDebug('File existence check', { exists: testResponse.ok, status: testResponse.status });
+                } catch (headError) {
+                    logError('File does not exist or network error', { error: headError.message });
+                }
+                
+                LOTTERY_DATA = {
+                    results: [],
+                    frequency: { white: {}, red: {} },
+                    last_updated: null
+                };
+                
+                logDebug('Using fallback empty data structure');
+            }
+        }
+        
+        function displayLatestWinningNumbers() {
+            const latestDiv = document.getElementById('latest-winning');
+            const displayDiv = document.getElementById('winning-display');
+            const dateDiv = document.getElementById('winning-date');
+            
+            if (!LATEST_WINNING_NUMBERS) {
+                latestDiv.style.display = 'none';
+                return;
+            }
+            
+            const { white, red, date, jackpot } = LATEST_WINNING_NUMBERS;
+            
+            let html = '';
+            white.forEach(num => {
+                html += `<span class="white-ball">${num}</span>`;
+            });
+            html += `<span class="red-ball">${red}</span>`;
+            
+            displayDiv.innerHTML = html;
+            
+            const formattedDate = new Date(date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            const jackpotFormatted = jackpot && jackpot !== "0" ? 
+                `$${parseInt(jackpot).toLocaleString()}` : 
+                'Unknown';
+            
+            dateDiv.innerHTML = `Drawing: ${formattedDate}<br>Estimated Jackpot: ${jackpotFormatted}`;
+            
+            latestDiv.style.display = 'block';
+        }
+        
+        function getCurrentLunarPhase() {
+            const now = new Date();
+            const newMoon = new Date('2024-01-11');
+            const lunarCycle = 29.53059;
+            const daysSinceNew = (now - newMoon) / (1000 * 60 * 60 * 24);
+            const phase = (daysSinceNew % lunarCycle) / lunarCycle;
+            return Math.floor(phase * 8);
+        }
+        
+        function calculateLunarNumbers() {
+            const phase = getCurrentLunarPhase();
+            const now = new Date();
+            const lunarDay = now.getDate() + phase;
+            
+            const whites = [];
+            for (let i = 0; i < 5; i++) {
+                const num = ((lunarDay * (i + 1) * 7) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = Math.floor((phase * whites.length * 13) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = (phase * 3 + now.getDate()) % 26 + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `🌙 Dynamic - Lunar Phase: ${phase}/8, Lunar influence: ${lunarDay}`
+            };
+        }
+        
+        function calculateFibonacciNumbers() {
+            const now = new Date();
+            const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+            const startIndex = dayOfYear % 15;
+            
+            const whites = [];
+            for (let i = 0; i < 5; i++) {
+                const fibIndex = (startIndex + i) % FIBONACCI_SEQUENCE.length;
+                const num = (FIBONACCI_SEQUENCE[fibIndex] % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = (FIBONACCI_SEQUENCE[(startIndex + whites.length) % FIBONACCI_SEQUENCE.length] * 2) % 69 + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = (FIBONACCI_SEQUENCE[startIndex % FIBONACCI_SEQUENCE.length] % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `🌀 Static - Fibonacci sequence starting at index ${startIndex}`
+            };
+        }
+        
+        function calculateGoldenRatioNumbers() {
+            const now = new Date();
+            const timestamp = now.getTime();
+            
+            const whites = [];
+            for (let i = 1; i <= 5; i++) {
+                const num = Math.floor((GOLDEN_RATIO * timestamp * i) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = Math.floor((GOLDEN_RATIO * whites.length * timestamp) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = Math.floor((GOLDEN_RATIO * timestamp) % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `✨ Hourly - Golden Ratio φ = ${GOLDEN_RATIO.toFixed(6)}`
+            };
+        }
+        
+        function calculatePiNumbers() {
+            const now = new Date();
+            const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+            const startIndex = dayOfYear % (PI_DIGITS.length - 10);
+            
+            const whites = [];
+            for (let i = 0; i < 10; i++) {
+                const digit1 = parseInt(PI_DIGITS[startIndex + i]);
+                const digit2 = parseInt(PI_DIGITS[startIndex + i + 1]);
+                const num = (digit1 * 10 + digit2) % 69 + 1;
+                if (!whites.includes(num) && whites.length < 5) {
+                    whites.push(num);
+                }
+            }
+            
+            while (whites.length < 5) {
+                const digit = parseInt(PI_DIGITS[(startIndex + whites.length) % PI_DIGITS.length]);
+                const num = (digit * 7 + whites.length * 3) % 69 + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const redDigit = parseInt(PI_DIGITS[startIndex % PI_DIGITS.length]);
+            const red = (redDigit * 3) % 26 + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `🔢 Daily - π digits starting at position ${startIndex}`
+            };
+        }
+        
+        function calculateGematriaNumbers() {
+            const now = new Date();
+            const dateString = now.toDateString().toUpperCase().replace(/[^A-Z]/g, '');
+            
+            let gematriaSum = 0;
+            for (let char of dateString) {
+                gematriaSum += GEMATRIA_VALUES[char] || 0;
+            }
+            
+            const whites = [];
+            for (let i = 1; i <= 5; i++) {
+                const num = ((gematriaSum * i) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = ((gematriaSum + whites.length * 11) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = (gematriaSum % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `📜 Daily - Gematria sum of "${dateString}": ${gematriaSum}`
+            };
+        }
+        
+        function calculateKabbalahNumbers() {
+            const now = new Date();
+            const sephirot = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            const paths = 22;
+            
+            const dayOfMonth = now.getDate();
+            const month = now.getMonth() + 1;
+            
+            const whites = [];
+            for (let i = 0; i < 5; i++) {
+                const sephira = sephirot[i % 10];
+                const num = ((sephira * dayOfMonth * (i + 1)) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = ((paths * month + whites.length * 7) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = ((paths + dayOfMonth) % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `🌳 Daily - Tree of Life: 10 Sephirot, 22 Paths, Day: ${dayOfMonth}`
+            };
+        }
+        
+        function calculateAngelNumbers() {
+            const now = new Date();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            
+            const angelPattern = Math.floor(hour / 3) + 1;
+            const repeatingDigit = angelPattern;
+            
+            const whites = [];
+            for (let i = 1; i <= 5; i++) {
+                const num = ((repeatingDigit * 11 * i + minute) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = ((repeatingDigit * whites.length * 7 + hour) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = ((repeatingDigit * 3 + minute) % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `👼 Hourly - Angel pattern: ${repeatingDigit}${repeatingDigit}${repeatingDigit}, Time: ${hour}:${minute}`
+            };
+        }
+        
+        function calculateIChing() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const dayOfYear = Math.floor((now - new Date(year, 0, 0)) / 86400000);
+            
+            const hexagram = (dayOfYear % 64) + 1;
+            
+            const whites = [];
+            for (let i = 1; i <= 5; i++) {
+                const num = ((hexagram * i * 6) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = ((hexagram + whites.length * 8) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = (hexagram % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `☯ Daily - I Ching Hexagram: ${hexagram}/64, Day: ${dayOfYear}`
+            };
+        }
+        
+        function calculateFrequencyAnalysis() {
+            logDebug('Starting frequency analysis', {
+                hasLotteryData: !!LOTTERY_DATA,
+                hasFrequency: !!LOTTERY_DATA?.frequency,
+                resultsCount: LOTTERY_DATA?.results?.length || 0
+            });
+            
+            if (!LOTTERY_DATA || !LOTTERY_DATA.frequency) {
+                logError('No lottery data available for frequency analysis', {
+                    lotteryDataExists: !!LOTTERY_DATA,
+                    frequencyExists: !!LOTTERY_DATA?.frequency
+                });
+                
+                return {
+                    whites: [6, 8, 20, 26, 32].sort((a, b) => a - b),
+                    red: 13,
+                    note: `📊 Error - No lottery data available. Check error log for details.`
+                };
+            }
+            
+            const whiteEntries = Object.entries(LOTTERY_DATA.frequency.white || {});
+            const redEntries = Object.entries(LOTTERY_DATA.frequency.red || {});
+            
+            const totalWhiteFreq = whiteEntries.reduce((sum, [, freq]) => sum + parseInt(freq || 0), 0);
+            const totalRedFreq = redEntries.reduce((sum, [, freq]) => sum + parseInt(freq || 0), 0);
+            
+            logDebug('Frequency analysis data', {
+                whiteEntriesCount: whiteEntries.length,
+                redEntriesCount: redEntries.length,
+                totalWhiteFreq,
+                totalRedFreq,
+                sampleWhiteFreq: Object.fromEntries(whiteEntries.slice(0, 5))
+            });
+            
+            if (totalWhiteFreq === 0 || totalRedFreq === 0) {
+                logError('Frequency data is empty or all zeros', {
+                    totalWhiteFreq,
+                    totalRedFreq,
+                    resultsCount: LOTTERY_DATA.results?.length
+                });
+                
+                return {
+                    whites: [1, 15, 30, 45, 60].sort((a, b) => a - b),
+                    red: 1,
+                    note: `📊 Error - Frequency data is empty. Results: ${LOTTERY_DATA.results?.length || 0}`
+                };
+            }
+            
+            const whiteFreq = Object.entries(LOTTERY_DATA.frequency.white)
+                .map(([num, freq]) => ({ num: parseInt(num), freq: parseInt(freq) }))
+                .sort((a, b) => b.freq - a.freq);
+            
+            const redFreq = Object.entries(LOTTERY_DATA.frequency.red)
+                .map(([num, freq]) => ({ num: parseInt(num), freq: parseInt(freq) }))
+                .sort((a, b) => b.freq - a.freq);
+            
+            const now = new Date();
+            const useHot = now.getDate() % 2 === 0;
+            
+            let whites, red;
+            
+            if (useHot) {
+                whites = whiteFreq.slice(0, 5).map(item => item.num);
+                red = redFreq[0]?.num || 1;
+            } else {
+                whites = whiteFreq.slice(-5).map(item => item.num);
+                red = redFreq[redFreq.length - 1]?.num || 26;
+            }
+            
+            const totalDrawings = LOTTERY_DATA.results.length;
+            const lastUpdate = LOTTERY_DATA.last_updated ? 
+                new Date(LOTTERY_DATA.last_updated).toLocaleDateString() : 'Unknown';
+            
+            logDebug('Frequency analysis result', {
+                useHot,
+                whites,
+                red,
+                totalDrawings,
+                lastUpdate
+            });
+            
+            return {
+                whites: whites.sort((a, b) => a - b),
+                red: red,
+                note: `📊 Dynamic - ${useHot ? 'Hot' : 'Cold'} numbers from ${totalDrawings} drawings (Updated: ${lastUpdate})`
+            };
+        }
+        
+        function calculateSacredGeometry() {
+            const now = new Date();
+            
+            const vesicaPiscis = 1.732;
+            const pentagram = 1.618;
+            const platonic = 5;
+            
+            const dayOfMonth = now.getDate();
+            
+            const whites = [];
+            const ratios = [vesicaPiscis, pentagram, Math.PI, Math.E, Math.sqrt(2)];
+            
+            for (let i = 0; i < 5; i++) {
+                const num = Math.floor((ratios[i] * dayOfMonth * (i + 1)) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = Math.floor((platonic * whites.length * dayOfMonth) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = Math.floor((pentagram * dayOfMonth) % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `🔺 Daily - Sacred geometry: √3, φ, π, e, √2 on day ${dayOfMonth}`
+            };
+        }
+        
+        function generateAllMethods() {
+            const resultsDiv = document.getElementById('results');
+            const timestampDiv = document.getElementById('timestamp');
+            
+            logDebug('Starting number generation');
+            
+            resultsDiv.innerHTML = '<div class="loading">🔮 Calculating divine mathematics... 🔮</div>';
+            
+            setTimeout(() => {
+                try {
+                    const methods = [
+                        { name: '🌙 Lunar Calculations', func: calculateLunarNumbers },
+                        { name: '🌀 Fibonacci Sequence', func: calculateFibonacciNumbers },
+                        { name: '✨ Golden Ratio', func: calculateGoldenRatioNumbers },
+                        { name: '🔢 Pi Sequence', func: calculatePiNumbers },
+                        { name: '📜 Gematria', func: calculateGematriaNumbers },
+                        { name: '🌳 Kabbalah Tree', func: calculateKabbalahNumbers },
+                        { name: '👼 Angel Numbers', func: calculateAngelNumbers },
+                        { name: '☯ I Ching', func: calculateIChing },
+                        { name: '📊 Frequency Analysis', func: calculateFrequencyAnalysis },
+                        { name: '🔺 Sacred Geometry', func: calculateSacredGeometry }
+                    ];
+                    
+                    let html = '';
+                    
+                    methods.forEach((method, index) => {
+                        try {
+                            logDebug(`Calculating method: ${method.name}`);
+                            const result = method.func();
+                            
+                            let winStatus = '';
+                            if (LATEST_WINNING_NUMBERS) {
+                                const win = checkWinnings(
+                                    result.whites, 
+                                    result.red, 
+                                    LATEST_WINNING_NUMBERS.white, 
+                                    LATEST_WINNING_NUMBERS.red
+                                );
+                                winStatus = `<div class="winning-status win-${win.class}">${win.prize}</div>`;
+                            }
+                            
+                            html += `
+                                <div class="method-group">
+                                    <div class="method-title">${method.name}</div>
+                                    <div class="numbers">
+                                        ${result.whites.map(num => `<span class="white-ball">${num}</span>`).join('')}
+                                        <span class="red-ball">${result.red}</span>
+                                    </div>
+                                    <div class="calculation-note">${result.note}</div>
+                                    ${winStatus}
+                                </div>
+                            `;
+                        } catch (error) {
+                            logError(`Error in method ${method.name}`, {
+                                error: error.message,
+                                stack: error.stack
+                            });
+                            
+                            html += `
+                                <div class="method-group">
+                                    <div class="method-title">${method.name}</div>
+                                    <div class="calculation-note" style="color: #dc143c;">Error: ${error.message}</div>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    resultsDiv.innerHTML = html;
+                    
+                    const now = new Date();
+                    const dataStatus = LOTTERY_DATA ? 
+                        `Data: ${LOTTERY_DATA.results?.length || 0} drawings` : 
+                        'Data: Not loaded';
+                    
+                    timestampDiv.innerHTML = `Generated: ${now.toLocaleString()}<br>${dataStatus}<br>Next lunar phase in ${(29.53 - (getCurrentLunarPhase() * 3.69)).toFixed(1)} days`;
+                    
+                    logDebug('Number generation completed');
+                    
+                } catch (error) {
+                    logError('Error during number generation', {
+                        error: error.message,
+                        stack: error.stack
+                    });
+                    
+                    resultsDiv.innerHTML = `
+                        <div class="error-box">
+                            <h4>Generation Error</h4>
+                            <div>Failed to generate numbers: ${error.message}</div>
+                            <div style="margin-top: 10px;">
+                                <button class="toggle-btn" onclick="toggleErrors()">Show Error Details</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }, 1500);
+        }
+        
+        window.onload = async function() {
+            logDebug('App starting up');
+            try {
+                await loadLotteryData();
+                setTimeout(generateAllMethods, 1000);
+            } catch (error) {
+                logError('Failed to initialize app', {
+                    error: error.message,
+                    stack: error.stack
+                });
+            }
+        };
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Powerball Mathematical Oracle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d3a 50%, #3a3a4e 100%);
+            color: #7fb069;
+            min-height: 100vh;
+            padding: 10px;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #7fb069;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(127, 176, 105, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffffff;
+            text-shadow: 0 0 10px #7fb069;
+            font-size: 1.5em;
+        }
+        
+        .generate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #ff6b35, #f7941d);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+        }
+        
+        .latest-numbers {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .latest-numbers h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+        }
+        
+        .winning-numbers {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        
+        .winning-date {
+            color: #ccc;
+            font-size: 0.9em;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .method-group {
+            margin-bottom: 15px;
+            background: rgba(127, 176, 105, 0.05);
+            border-left: 3px solid #7fb069;
+            padding: 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .method-group:hover {
+            background: rgba(127, 176, 105, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .method-title {
+            color: #7fb069;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+        
+        .numbers {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        
+        .white-ball {
+            background: linear-gradient(135deg, #ffffff, #f0f0f0);
+            color: #333;
+            padding: 10px 12px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 0.9em;
+            min-width: 38px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .red-ball {
+            background: linear-gradient(135deg, #dc143c, #b71c1c);
+            color: white;
+            padding: 10px 12px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 0.9em;
+            min-width: 38px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .calculation-note {
+            font-size: 0.75em;
+            color: #888;
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+        
+        .winning-status {
+            margin-top: 8px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .win-jackpot {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #000;
+            animation: flash 1s infinite;
+            border: 2px solid #fff;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+        }
+        
+        .win-million {
+            background: linear-gradient(45deg, #c0392b, #e74c3c);
+            color: white;
+            box-shadow: 0 0 10px rgba(192, 57, 43, 0.6);
+        }
+        
+        .win-large {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+            box-shadow: 0 0 10px rgba(39, 174, 96, 0.6);
+        }
+        
+        .win-medium {
+            background: linear-gradient(45deg, #2980b9, #3498db);
+            color: white;
+            box-shadow: 0 0 10px rgba(41, 128, 185, 0.6);
+        }
+        
+        .win-small {
+            background: linear-gradient(45deg, #8e44ad, #9b59b6);
+            color: white;
+            box-shadow: 0 0 10px rgba(142, 68, 173, 0.6);
+        }
+        
+        .win-none {
+            background: #444;
+            color: #999;
+            border: 1px solid #666;
+        }
+        
+        @keyframes flash {
+            0%, 50% { opacity: 1; transform: scale(1); }
+            25%, 75% { opacity: 0.7; transform: scale(1.05); }
+        }
+        
+        .error-box {
+            background: rgba(220, 20, 60, 0.1);
+            border: 1px solid #dc143c;
+            border-radius: 5px;
+            padding: 12px;
+            margin-bottom: 15px;
+            color: #ff6b6b;
+            font-size: 0.85em;
+        }
+        
+        .error-box h4 {
+            margin: 0 0 8px 0;
+            color: #dc143c;
+        }
+        
+        .debug-box {
+            background: rgba(70, 130, 180, 0.1);
+            border: 1px solid #4682b4;
+            border-radius: 5px;
+            padding: 12px;
+            margin-bottom: 15px;
+            color: #87ceeb;
+            font-size: 0.8em;
+            font-family: monospace;
+        }
+        
+        .debug-box h4 {
+            margin: 0 0 8px 0;
+            color: #4682b4;
+        }
+        
+        .toggle-btn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-btn:hover {
+            background: #888;
+            transform: translateY(-1px);
+        }
+        
+        .loading {
+            text-align: center;
+            color: #7fb069;
+            font-style: italic;
+            font-size: 1.1em;
+            padding: 20px;
+        }
+        
+        .timestamp {
+            text-align: center;
+            color: #666;
+            font-size: 0.8em;
+            margin-top: 20px;
+            border-top: 1px solid #333;
+            padding-top: 15px;
+            line-height: 1.4;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                margin: 5px;
+                padding: 15px;
+            }
+            
+            .numbers {
+                justify-content: center;
+            }
+            
+            .white-ball, .red-ball {
+                min-width: 35px;
+                padding: 8px 10px;
+                font-size: 0.85em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔮 Mathematical Oracle 🔮</h1>
+        
+        <div style="text-align: center; margin-bottom: 15px;">
+            <button class="toggle-btn" onclick="toggleDebug()">🔍 Debug Info</button>
+            <button class="toggle-btn" onclick="toggleErrors()">🚨 Error Log</button>
+        </div>
+        
+        <div id="error-status" class="error-box" style="display: none;"></div>
+        <div id="debug-info" class="debug-box" style="display: none;"></div>
+        
+        <button class="generate-btn" onclick="generateAllMethods()">
+            ⚡ Generate Divine Numbers ⚡
+        </button>
+        
+        <div id="latest-winning" class="latest-numbers" style="display: none;">
+            <h3>🎯 Latest Winning Numbers</h3>
+            <div id="winning-display" class="winning-numbers"></div>
+            <div id="winning-date" class="winning-date"></div>
+        </div>
+        
+        <div id="results"></div>
+        
+        <div class="timestamp" id="timestamp"></div>
+    </div>
+
+    <script>
+        // Mathematical constants and data
+        const PI_DIGITS = "31415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679";
+        const FIBONACCI_SEQUENCE = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765];
+        const GOLDEN_RATIO = 1.618033988749;
+        
+        // Gematria values (simplified Hebrew)
+        const GEMATRIA_VALUES = {
+            'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'I': 9, 'J': 10,
+            'K': 20, 'L': 30, 'M': 40, 'N': 50, 'O': 60, 'P': 70, 'Q': 80, 'R': 90, 'S': 100,
+            'T': 200, 'U': 300, 'V': 400, 'W': 500, 'X': 600, 'Y': 700, 'Z': 800
+        };
+        
+        // Live lottery data and error tracking
+        let LOTTERY_DATA = null;
+        let ERROR_LOG = [];
+        let DEBUG_INFO = [];
+        let LATEST_WINNING_NUMBERS = null;
+        
+        function checkWinnings(myWhite, myRed, winningWhite, winningRed) {
+            const whiteMatches = myWhite.filter(num => winningWhite.includes(num)).length;
+            const redMatch = myRed === winningRed;
+            
+            if (whiteMatches === 5 && redMatch) {
+                return { prize: "JACKPOT! 🎰💰", amount: "Jackpot", class: "jackpot" };
+            } else if (whiteMatches === 5 && !redMatch) {
+                return { prize: "🎉 $1,000,000", amount: "$1,000,000", class: "million" };
+            } else if (whiteMatches === 4 && redMatch) {
+                return { prize: "🎉 $50,000", amount: "$50,000", class: "large" };
+            } else if (whiteMatches === 4 && !redMatch) {
+                return { prize: "🎉 $100", amount: "$100", class: "medium" };
+            } else if (whiteMatches === 3 && redMatch) {
+                return { prize: "🎉 $100", amount: "$100", class: "medium" };
+            } else if (whiteMatches === 3 && !redMatch) {
+                return { prize: "🎉 $7", amount: "$7", class: "small" };
+            } else if (whiteMatches === 2 && redMatch) {
+                return { prize: "🎉 $7", amount: "$7", class: "small" };
+            } else if (whiteMatches === 1 && redMatch) {
+                return { prize: "🎉 $4", amount: "$4", class: "small" };
+            } else if (whiteMatches === 0 && redMatch) {
+                return { prize: "🎉 $4", amount: "$4", class: "small" };
+            } else {
+                return { prize: "No win", amount: "$0", class: "none" };
+            }
+        }
+        
+        function getLatestWinningNumbers() {
+            if (!LOTTERY_DATA || !LOTTERY_DATA.results || LOTTERY_DATA.results.length === 0) {
+                return null;
+            }
+            
+            const latest = LOTTERY_DATA.results[0];
+            return {
+                white: latest.white,
+                red: latest.red,
+                date: latest.date,
+                jackpot: latest.jackpot
+            };
+        }
+        
+        function logError(message, details = null) {
+            const timestamp = new Date().toLocaleString();
+            ERROR_LOG.push({ timestamp, message, details });
+            console.error(`[${timestamp}] ${message}`, details);
+            updateErrorDisplay();
+        }
+        
+        function logDebug(message, data = null) {
+            const timestamp = new Date().toLocaleString();
+            DEBUG_INFO.push({ timestamp, message, data });
+            console.log(`[${timestamp}] ${message}`, data);
+            updateDebugDisplay();
+        }
+        
+        function updateErrorDisplay() {
+            const errorBox = document.getElementById('error-status');
+            if (ERROR_LOG.length === 0) {
+                errorBox.style.display = 'none';
+                return;
+            }
+            
+            const recent = ERROR_LOG.slice(-5);
+            let html = '<h4>🚨 Error Status</h4>';
+            recent.forEach(error => {
+                html += `<div><strong>${error.timestamp}:</strong> ${error.message}</div>`;
+                if (error.details) {
+                    html += `<div style="font-size: 0.8em; color: #999; margin-left: 10px;">${JSON.stringify(error.details)}</div>`;
+                }
+            });
+            errorBox.innerHTML = html;
+        }
+        
+        function updateDebugDisplay() {
+            const debugBox = document.getElementById('debug-info');
+            if (DEBUG_INFO.length === 0) return;
+            
+            const recent = DEBUG_INFO.slice(-10);
+            let html = '<h4>🔍 Debug Information</h4>';
+            recent.forEach(debug => {
+                html += `<div><strong>${debug.timestamp}:</strong> ${debug.message}</div>`;
+                if (debug.data) {
+                    html += `<div style="font-size: 0.8em; color: #999; margin-left: 10px;">${JSON.stringify(debug.data, null, 2)}</div>`;
+                }
+            });
+            debugBox.innerHTML = html;
+        }
+        
+        function toggleDebug() {
+            const debugBox = document.getElementById('debug-info');
+            debugBox.style.display = debugBox.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function toggleErrors() {
+            const errorBox = document.getElementById('error-status');
+            errorBox.style.display = errorBox.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        async function loadLotteryData() {
+            try {
+                logDebug('Starting lottery data load');
+                
+                const response = await fetch('lottery-data.json');
+                logDebug('Fetch response status', { status: response.status, ok: response.ok });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                logDebug('Raw response length', { length: text.length, preview: text.substring(0, 100) });
+                
+                if (!text.trim()) {
+                    throw new Error('Empty response from lottery-data.json');
+                }
+                
+                LOTTERY_DATA = JSON.parse(text);
+                logDebug('Parsed lottery data', {
+                    resultsCount: LOTTERY_DATA.results?.length || 0,
+                    lastUpdated: LOTTERY_DATA.last_updated,
+                    hasFrequency: !!LOTTERY_DATA.frequency
+                });
+                
+                LATEST_WINNING_NUMBERS = getLatestWinningNumbers();
+                if (LATEST_WINNING_NUMBERS) {
+                    logDebug('Latest winning numbers loaded', LATEST_WINNING_NUMBERS);
+                    displayLatestWinningNumbers();
+                }
+                
+                if (!LOTTERY_DATA.results) {
+                    LOTTERY_DATA.results = [];
+                    logError('No results array in lottery data, created empty array');
+                }
+                
+                if (!LOTTERY_DATA.frequency) {
+                    LOTTERY_DATA.frequency = { white: {}, red: {} };
+                    logError('No frequency data found, created empty frequency object');
+                }
+                
+                console.log(`✅ Loaded ${LOTTERY_DATA.results.length} lottery results`);
+                
+            } catch (error) {
+                logError('Failed to load lottery data', {
+                    error: error.message,
+                    stack: error.stack
+                });
+                
+                try {
+                    const testResponse = await fetch('lottery-data.json', { method: 'HEAD' });
+                    logDebug('File existence check', { exists: testResponse.ok, status: testResponse.status });
+                } catch (headError) {
+                    logError('File does not exist or network error', { error: headError.message });
+                }
+                
+                LOTTERY_DATA = {
+                    results: [],
+                    frequency: { white: {}, red: {} },
+                    last_updated: null
+                };
+                
+                logDebug('Using fallback empty data structure');
+            }
+        }
+        
+        function displayLatestWinningNumbers() {
+            const latestDiv = document.getElementById('latest-winning');
+            const displayDiv = document.getElementById('winning-display');
+            const dateDiv = document.getElementById('winning-date');
+            
+            if (!LATEST_WINNING_NUMBERS) {
+                latestDiv.style.display = 'none';
+                return;
+            }
+            
+            const { white, red, date, jackpot } = LATEST_WINNING_NUMBERS;
+            
+            let html = '';
+            white.forEach(num => {
+                html += `<span class="white-ball">${num}</span>`;
+            });
+            html += `<span class="red-ball">${red}</span>`;
+            
+            displayDiv.innerHTML = html;
+            
+            const formattedDate = new Date(date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            const jackpotFormatted = jackpot && jackpot !== "0" ? 
+                `$${parseInt(jackpot).toLocaleString()}` : 
+                'Unknown';
+            
+            dateDiv.innerHTML = `Drawing: ${formattedDate}<br>Estimated Jackpot: ${jackpotFormatted}`;
+            
+            latestDiv.style.display = 'block';
+        }
+        
+        function getCurrentLunarPhase() {
+            const now = new Date();
+            const newMoon = new Date('2024-01-11');
+            const lunarCycle = 29.53059;
+            const daysSinceNew = (now - newMoon) / (1000 * 60 * 60 * 24);
+            const phase = (daysSinceNew % lunarCycle) / lunarCycle;
+            return Math.floor(phase * 8);
+        }
+        
+        function calculateLunarNumbers() {
+            const phase = getCurrentLunarPhase();
+            const now = new Date();
+            const lunarDay = now.getDate() + phase;
+            
+            const whites = [];
+            for (let i = 0; i < 5; i++) {
+                const num = ((lunarDay * (i + 1) * 7) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = Math.floor((phase * whites.length * 13) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = (phase * 3 + now.getDate()) % 26 + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `🌙 Dynamic - Lunar Phase: ${phase}/8, Lunar influence: ${lunarDay}`
+            };
+        }
+        
+        function calculateFibonacciNumbers() {
+            const now = new Date();
+            const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+            const startIndex = dayOfYear % 15;
+            
+            const whites = [];
+            for (let i = 0; i < 5; i++) {
+                const fibIndex = (startIndex + i) % FIBONACCI_SEQUENCE.length;
+                const num = (FIBONACCI_SEQUENCE[fibIndex] % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = (FIBONACCI_SEQUENCE[(startIndex + whites.length) % FIBONACCI_SEQUENCE.length] * 2) % 69 + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = (FIBONACCI_SEQUENCE[startIndex % FIBONACCI_SEQUENCE.length] % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `🌀 Static - Fibonacci sequence starting at index ${startIndex}`
+            };
+        }
+        
+        function calculateGoldenRatioNumbers() {
+            const now = new Date();
+            const timestamp = now.getTime();
+            
+            const whites = [];
+            for (let i = 1; i <= 5; i++) {
+                const num = Math.floor((GOLDEN_RATIO * timestamp * i) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = Math.floor((GOLDEN_RATIO * whites.length * timestamp) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = Math.floor((GOLDEN_RATIO * timestamp) % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `✨ Hourly - Golden Ratio φ = ${GOLDEN_RATIO.toFixed(6)}`
+            };
+        }
+        
+        function calculatePiNumbers() {
+            const now = new Date();
+            const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+            const startIndex = dayOfYear % (PI_DIGITS.length - 10);
+            
+            const whites = [];
+            for (let i = 0; i < 10; i++) {
+                const digit1 = parseInt(PI_DIGITS[startIndex + i]);
+                const digit2 = parseInt(PI_DIGITS[startIndex + i + 1]);
+                const num = (digit1 * 10 + digit2) % 69 + 1;
+                if (!whites.includes(num) && whites.length < 5) {
+                    whites.push(num);
+                }
+            }
+            
+            while (whites.length < 5) {
+                const digit = parseInt(PI_DIGITS[(startIndex + whites.length) % PI_DIGITS.length]);
+                const num = (digit * 7 + whites.length * 3) % 69 + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const redDigit = parseInt(PI_DIGITS[startIndex % PI_DIGITS.length]);
+            const red = (redDigit * 3) % 26 + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `🔢 Daily - π digits starting at position ${startIndex}`
+            };
+        }
+        
+        function calculateGematriaNumbers() {
+            const now = new Date();
+            const dateString = now.toDateString().toUpperCase().replace(/[^A-Z]/g, '');
+            
+            let gematriaSum = 0;
+            for (let char of dateString) {
+                gematriaSum += GEMATRIA_VALUES[char] || 0;
+            }
+            
+            const whites = [];
+            for (let i = 1; i <= 5; i++) {
+                const num = ((gematriaSum * i) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = ((gematriaSum + whites.length * 11) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = (gematriaSum % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `📜 Daily - Gematria sum of "${dateString}": ${gematriaSum}`
+            };
+        }
+        
+        function calculateKabbalahNumbers() {
+            const now = new Date();
+            const sephirot = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            const paths = 22;
+            
+            const dayOfMonth = now.getDate();
+            const month = now.getMonth() + 1;
+            
+            const whites = [];
+            for (let i = 0; i < 5; i++) {
+                const sephira = sephirot[i % 10];
+                const num = ((sephira * dayOfMonth * (i + 1)) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = ((paths * month + whites.length * 7) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = ((paths + dayOfMonth) % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `🌳 Daily - Tree of Life: 10 Sephirot, 22 Paths, Day: ${dayOfMonth}`
+            };
+        }
+        
+        function calculateAngelNumbers() {
+            const now = new Date();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            
+            const angelPattern = Math.floor(hour / 3) + 1;
+            const repeatingDigit = angelPattern;
+            
+            const whites = [];
+            for (let i = 1; i <= 5; i++) {
+                const num = ((repeatingDigit * 11 * i + minute) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = ((repeatingDigit * whites.length * 7 + hour) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = ((repeatingDigit * 3 + minute) % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `👼 Hourly - Angel pattern: ${repeatingDigit}${repeatingDigit}${repeatingDigit}, Time: ${hour}:${minute}`
+            };
+        }
+        
+        function calculateIChing() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const dayOfYear = Math.floor((now - new Date(year, 0, 0)) / 86400000);
+            
+            const hexagram = (dayOfYear % 64) + 1;
+            
+            const whites = [];
+            for (let i = 1; i <= 5; i++) {
+                const num = ((hexagram * i * 6) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = ((hexagram + whites.length * 8) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = (hexagram % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `☯ Daily - I Ching Hexagram: ${hexagram}/64, Day: ${dayOfYear}`
+            };
+        }
+        
+        function calculateFrequencyAnalysis() {
+            logDebug('Starting frequency analysis', {
+                hasLotteryData: !!LOTTERY_DATA,
+                hasFrequency: !!LOTTERY_DATA?.frequency,
+                resultsCount: LOTTERY_DATA?.results?.length || 0
+            });
+            
+            if (!LOTTERY_DATA || !LOTTERY_DATA.frequency) {
+                logError('No lottery data available for frequency analysis', {
+                    lotteryDataExists: !!LOTTERY_DATA,
+                    frequencyExists: !!LOTTERY_DATA?.frequency
+                });
+                
+                return {
+                    whites: [6, 8, 20, 26, 32].sort((a, b) => a - b),
+                    red: 13,
+                    note: `📊 Error - No lottery data available. Check error log for details.`
+                };
+            }
+            
+            const whiteEntries = Object.entries(LOTTERY_DATA.frequency.white || {});
+            const redEntries = Object.entries(LOTTERY_DATA.frequency.red || {});
+            
+            const totalWhiteFreq = whiteEntries.reduce((sum, [, freq]) => sum + parseInt(freq || 0), 0);
+            const totalRedFreq = redEntries.reduce((sum, [, freq]) => sum + parseInt(freq || 0), 0);
+            
+            logDebug('Frequency analysis data', {
+                whiteEntriesCount: whiteEntries.length,
+                redEntriesCount: redEntries.length,
+                totalWhiteFreq,
+                totalRedFreq,
+                sampleWhiteFreq: Object.fromEntries(whiteEntries.slice(0, 5))
+            });
+            
+            if (totalWhiteFreq === 0 || totalRedFreq === 0) {
+                logError('Frequency data is empty or all zeros', {
+                    totalWhiteFreq,
+                    totalRedFreq,
+                    resultsCount: LOTTERY_DATA.results?.length
+                });
+                
+                return {
+                    whites: [1, 15, 30, 45, 60].sort((a, b) => a - b),
+                    red: 1,
+                    note: `📊 Error - Frequency data is empty. Results: ${LOTTERY_DATA.results?.length || 0}`
+                };
+            }
+            
+            const whiteFreq = Object.entries(LOTTERY_DATA.frequency.white)
+                .map(([num, freq]) => ({ num: parseInt(num), freq: parseInt(freq) }))
+                .sort((a, b) => b.freq - a.freq);
+            
+            const redFreq = Object.entries(LOTTERY_DATA.frequency.red)
+                .map(([num, freq]) => ({ num: parseInt(num), freq: parseInt(freq) }))
+                .sort((a, b) => b.freq - a.freq);
+            
+            const now = new Date();
+            const useHot = now.getDate() % 2 === 0;
+            
+            let whites, red;
+            
+            if (useHot) {
+                whites = whiteFreq.slice(0, 5).map(item => item.num);
+                red = redFreq[0]?.num || 1;
+            } else {
+                whites = whiteFreq.slice(-5).map(item => item.num);
+                red = redFreq[redFreq.length - 1]?.num || 26;
+            }
+            
+            const totalDrawings = LOTTERY_DATA.results.length;
+            const lastUpdate = LOTTERY_DATA.last_updated ? 
+                new Date(LOTTERY_DATA.last_updated).toLocaleDateString() : 'Unknown';
+            
+            logDebug('Frequency analysis result', {
+                useHot,
+                whites,
+                red,
+                totalDrawings,
+                lastUpdate
+            });
+            
+            return {
+                whites: whites.sort((a, b) => a - b),
+                red: red,
+                note: `📊 Dynamic - ${useHot ? 'Hot' : 'Cold'} numbers from ${totalDrawings} drawings (Updated: ${lastUpdate})`
+            };
+        }
+        
+        function calculateSacredGeometry() {
+            const now = new Date();
+            
+            const vesicaPiscis = 1.732;
+            const pentagram = 1.618;
+            const platonic = 5;
+            
+            const dayOfMonth = now.getDate();
+            
+            const whites = [];
+            const ratios = [vesicaPiscis, pentagram, Math.PI, Math.E, Math.sqrt(2)];
+            
+            for (let i = 0; i < 5; i++) {
+                const num = Math.floor((ratios[i] * dayOfMonth * (i + 1)) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            while (whites.length < 5) {
+                const num = Math.floor((platonic * whites.length * dayOfMonth) % 69) + 1;
+                if (!whites.includes(num)) whites.push(num);
+            }
+            
+            const red = Math.floor((pentagram * dayOfMonth) % 26) + 1;
+            
+            return {
+                whites: whites.slice(0, 5).sort((a, b) => a - b),
+                red: red,
+                note: `🔺 Daily - Sacred geometry: √3, φ, π, e, √2 on day ${dayOfMonth}`
+            };
+        }
+        
+        function generateAllMethods() {
+            const resultsDiv = document.getElementById('results');
+            const timestampDiv = document.getElementById('timestamp');
+            
+            logDebug('Starting number generation');
+            
+            resultsDiv.innerHTML = '<div class="loading">🔮 Calculating divine mathematics... 🔮</div>';
+            
+            setTimeout(() => {
+                try {
+                    const methods = [
+                        { name: '🌙 Lunar Calculations', func: calculateLunarNumbers },
+                        { name: '🌀 Fibonacci Sequence', func: calculateFibonacciNumbers },
+                        { name: '✨ Golden Ratio', func: calculateGoldenRatioNumbers },
+                        { name: '🔢 Pi Sequence', func: calculatePiNumbers },
+                        { name: '📜 Gematria', func: calculateGematriaNumbers },
+                        { name: '🌳 Kabbalah Tree', func: calculateKabbalahNumbers },
+                        { name: '👼 Angel Numbers', func: calculateAngelNumbers },
+                        { name: '☯ I Ching', func: calculateIChing },
+                        { name: '📊 Frequency Analysis', func: calculateFrequencyAnalysis },
+                        { name: '🔺 Sacred Geometry', func: calculateSacredGeometry }
+                    ];
+                    
+                    let html = '';
+                    
+                    methods.forEach((method, index) => {
+                        try {
+                            logDebug(`Calculating method: ${method.name}`);
+                            const result = method.func();
+                            
+                            let winStatus = '';
+                            if (LATEST_WINNING_NUMBERS) {
+                                const win = checkWinnings(
+                                    result.whites, 
+                                    result.red, 
+                                    LATEST_WINNING_NUMBERS.white, 
+                                    LATEST_WINNING_NUMBERS.red
+                                );
+                                winStatus = `<div class="winning-status win-${win.class}">${win.prize}</div>`;
+                            }
+                            
+                            html += `
+                                <div class="method-group">
+                                    <div class="method-title">${method.name}</div>
+                                    <div class="numbers">
+                                        ${result.whites.map(num => `<span class="white-ball">${num}</span>`).join('')}
+                                        <span class="red-ball">${result.red}</span>
+                                    </div>
+                                    <div class="calculation-note">${result.note}</div>
+                                    ${winStatus}
+                                </div>
+                            `;
+                        } catch (error) {
+                            logError(`Error in method ${method.name}`, {
+                                error: error.message,
+                                stack: error.stack
+                            });
+                            
+                            html += `
+                                <div class="method-group">
+                                    <div class="method-title">${method.name}</div>
+                                    <div class="calculation-note" style="color: #dc143c;">Error: ${error.message}</div>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    resultsDiv.innerHTML = html;
+                    
+                    const now = new Date();
+                    const dataStatus = LOTTERY_DATA ? 
+                        `Data: ${LOTTERY_DATA.results?.length || 0} drawings` : 
+                        'Data: Not loaded';
+                    
+                    timestampDiv.innerHTML = `Generated: ${now.toLocaleString()}<br>${dataStatus}<br>Next lunar phase in ${(29.53 - (getCurrentLunarPhase() * 3.69)).toFixed(1)} days`;
+                    
+                    logDebug('Number generation completed');
+                    
+                } catch (error) {
+                    logError('Error during number generation', {
+                        error: error.message,
+                        stack: error.stack
+                    });
+                    
+                    resultsDiv.innerHTML = `
+                        <div class="error-box">
+                            <h4>Generation Error</h4>
+                            <div>Failed to generate numbers: ${error.message}</div>
+                            <div style="margin-top: 10px;">
+                                <button class="toggle-btn" onclick="toggleErrors()">Show Error Details</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }, 1500);
+        }
+        
+        window.onload = async function() {
+            logDebug('App starting up');
+            try {
+                await loadLotteryData();
+                setTimeout(generateAllMethods, 1000);
+            } catch (error) {
+                logError('Failed to initialize app', {
+                    error: error.message,
+                    stack: error.stack
+                });
+            }
+        };
+    </script>
 </body>
 </html>
