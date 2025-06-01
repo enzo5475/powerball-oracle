@@ -120,14 +120,68 @@
             border-top: 1px solid #333;
             padding-top: 10px;
         }
+        
+        .error-box {
+            background: rgba(220, 20, 60, 0.1);
+            border: 1px solid #dc143c;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+            color: #ff6b6b;
+            font-size: 0.85em;
+        }
+        
+        .error-box h4 {
+            margin: 0 0 8px 0;
+            color: #dc143c;
+        }
+        
+        .debug-box {
+            background: rgba(70, 130, 180, 0.1);
+            border: 1px solid #4682b4;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+            color: #87ceeb;
+            font-size: 0.8em;
+            font-family: monospace;
+        }
+        
+        .debug-box h4 {
+            margin: 0 0 8px 0;
+            color: #4682b4;
+        }
+        
+        .toggle-btn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .toggle-btn:hover {
+            background: #888;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🔮 Mathematical Oracle 🔮</h1>
+        
+        <div style="text-align: center; margin-bottom: 15px;">
+            <button class="toggle-btn" onclick="toggleDebug()">Show Debug Info</button>
+            <button class="toggle-btn" onclick="toggleErrors()">Show Error Log</button>
+        </div>
         <button class="generate-btn" onclick="generateAllMethods()">
             ⚡ Generate Divine Numbers ⚡
         </button>
+        
+        <div id="error-status" class="error-box" style="display: none;"></div>
+        <div id="debug-info" class="debug-box" style="display: none;"></div>
         
         <div id="results"></div>
         
@@ -147,21 +201,127 @@
             'T': 200, 'U': 300, 'V': 400, 'W': 500, 'X': 600, 'Y': 700, 'Z': 800
         };
         
-        // Live lottery data
+        // Live lottery data and error tracking
         let LOTTERY_DATA = null;
+        let ERROR_LOG = [];
+        let DEBUG_INFO = [];
+        
+        function logError(message, details = null) {
+            const timestamp = new Date().toLocaleString();
+            ERROR_LOG.push({ timestamp, message, details });
+            console.error(`[${timestamp}] ${message}`, details);
+            updateErrorDisplay();
+        }
+        
+        function logDebug(message, data = null) {
+            const timestamp = new Date().toLocaleString();
+            DEBUG_INFO.push({ timestamp, message, data });
+            console.log(`[${timestamp}] ${message}`, data);
+            updateDebugDisplay();
+        }
+        
+        function updateErrorDisplay() {
+            const errorBox = document.getElementById('error-status');
+            if (ERROR_LOG.length === 0) {
+                errorBox.style.display = 'none';
+                return;
+            }
+            
+            const recent = ERROR_LOG.slice(-5); // Show last 5 errors
+            let html = '<h4>🚨 Error Status</h4>';
+            recent.forEach(error => {
+                html += `<div><strong>${error.timestamp}:</strong> ${error.message}</div>`;
+                if (error.details) {
+                    html += `<div style="font-size: 0.8em; color: #999; margin-left: 10px;">${JSON.stringify(error.details)}</div>`;
+                }
+            });
+            errorBox.innerHTML = html;
+        }
+        
+        function updateDebugDisplay() {
+            const debugBox = document.getElementById('debug-info');
+            if (DEBUG_INFO.length === 0) return;
+            
+            const recent = DEBUG_INFO.slice(-10); // Show last 10 debug entries
+            let html = '<h4>🔍 Debug Information</h4>';
+            recent.forEach(debug => {
+                html += `<div><strong>${debug.timestamp}:</strong> ${debug.message}</div>`;
+                if (debug.data) {
+                    html += `<div style="font-size: 0.8em; color: #999; margin-left: 10px;">${JSON.stringify(debug.data, null, 2)}</div>`;
+                }
+            });
+            debugBox.innerHTML = html;
+        }
+        
+        function toggleDebug() {
+            const debugBox = document.getElementById('debug-info');
+            debugBox.style.display = debugBox.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function toggleErrors() {
+            const errorBox = document.getElementById('error-status');
+            errorBox.style.display = errorBox.style.display === 'none' ? 'block' : 'none';
+        }
         
         async function loadLotteryData() {
             try {
+                logDebug('Starting lottery data load');
+                
                 const response = await fetch('lottery-data.json');
-                LOTTERY_DATA = await response.json();
-                console.log(`Loaded ${LOTTERY_DATA.results.length} lottery results`);
+                logDebug('Fetch response status', { status: response.status, ok: response.ok });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                logDebug('Raw response length', { length: text.length, preview: text.substring(0, 100) });
+                
+                if (!text.trim()) {
+                    throw new Error('Empty response from lottery-data.json');
+                }
+                
+                LOTTERY_DATA = JSON.parse(text);
+                logDebug('Parsed lottery data', {
+                    resultsCount: LOTTERY_DATA.results?.length || 0,
+                    lastUpdated: LOTTERY_DATA.last_updated,
+                    hasFrequency: !!LOTTERY_DATA.frequency
+                });
+                
+                if (!LOTTERY_DATA.results) {
+                    LOTTERY_DATA.results = [];
+                    logError('No results array in lottery data, created empty array');
+                }
+                
+                if (!LOTTERY_DATA.frequency) {
+                    LOTTERY_DATA.frequency = { white: {}, red: {} };
+                    logError('No frequency data found, created empty frequency object');
+                }
+                
+                console.log(`✅ Loaded ${LOTTERY_DATA.results.length} lottery results`);
+                
             } catch (error) {
-                console.log('Using fallback lottery data');
-                // Fallback data if file doesn't exist yet
+                logError('Failed to load lottery data', {
+                    error: error.message,
+                    stack: error.stack
+                });
+                
+                // Check if file exists
+                try {
+                    const testResponse = await fetch('lottery-data.json', { method: 'HEAD' });
+                    logDebug('File existence check', { exists: testResponse.ok, status: testResponse.status });
+                } catch (headError) {
+                    logError('File does not exist or network error', { error: headError.message });
+                }
+                
+                // Fallback data
                 LOTTERY_DATA = {
                     results: [],
-                    frequency: { white: {}, red: {} }
+                    frequency: { white: {}, red: {} },
+                    last_updated: null
                 };
+                
+                logDebug('Using fallback empty data structure');
             }
         }
         
@@ -404,11 +564,51 @@
         }
         
         function calculateFrequencyAnalysis() {
+            logDebug('Starting frequency analysis', {
+                hasLotteryData: !!LOTTERY_DATA,
+                hasFrequency: !!LOTTERY_DATA?.frequency,
+                resultsCount: LOTTERY_DATA?.results?.length || 0
+            });
+            
             if (!LOTTERY_DATA || !LOTTERY_DATA.frequency) {
+                logError('No lottery data available for frequency analysis', {
+                    lotteryDataExists: !!LOTTERY_DATA,
+                    frequencyExists: !!LOTTERY_DATA?.frequency
+                });
+                
                 return {
                     whites: [6, 8, 20, 26, 32].sort((a, b) => a - b),
                     red: 13,
-                    note: `📊 Static - Using fallback frequency data`
+                    note: `📊 Error - No lottery data available. Check error log for details.`
+                };
+            }
+            
+            // Check if frequency data has any non-zero values
+            const whiteEntries = Object.entries(LOTTERY_DATA.frequency.white || {});
+            const redEntries = Object.entries(LOTTERY_DATA.frequency.red || {});
+            
+            const totalWhiteFreq = whiteEntries.reduce((sum, [, freq]) => sum + parseInt(freq || 0), 0);
+            const totalRedFreq = redEntries.reduce((sum, [, freq]) => sum + parseInt(freq || 0), 0);
+            
+            logDebug('Frequency analysis data', {
+                whiteEntriesCount: whiteEntries.length,
+                redEntriesCount: redEntries.length,
+                totalWhiteFreq,
+                totalRedFreq,
+                sampleWhiteFreq: Object.fromEntries(whiteEntries.slice(0, 5))
+            });
+            
+            if (totalWhiteFreq === 0 || totalRedFreq === 0) {
+                logError('Frequency data is empty or all zeros', {
+                    totalWhiteFreq,
+                    totalRedFreq,
+                    resultsCount: LOTTERY_DATA.results?.length
+                });
+                
+                return {
+                    whites: [1, 15, 30, 45, 60].sort((a, b) => a - b),
+                    red: 1,
+                    note: `📊 Error - Frequency data is empty. Results: ${LOTTERY_DATA.results?.length || 0}`
                 };
             }
             
@@ -440,6 +640,14 @@
             const totalDrawings = LOTTERY_DATA.results.length;
             const lastUpdate = LOTTERY_DATA.last_updated ? 
                 new Date(LOTTERY_DATA.last_updated).toLocaleDateString() : 'Unknown';
+            
+            logDebug('Frequency analysis result', {
+                useHot,
+                whites,
+                red,
+                totalDrawings,
+                lastUpdate
+            });
             
             return {
                 whites: whites.sort((a, b) => a - b),
@@ -485,49 +693,99 @@
             const resultsDiv = document.getElementById('results');
             const timestampDiv = document.getElementById('timestamp');
             
+            logDebug('Starting number generation');
+            
             resultsDiv.innerHTML = '<div class="loading">🔮 Calculating divine mathematics... 🔮</div>';
             
             setTimeout(() => {
-                const methods = [
-                    { name: '🌙 Lunar Calculations', func: calculateLunarNumbers },
-                    { name: '🌀 Fibonacci Sequence', func: calculateFibonacciNumbers },
-                    { name: '✨ Golden Ratio', func: calculateGoldenRatioNumbers },
-                    { name: '🔢 Pi Sequence', func: calculatePiNumbers },
-                    { name: '📜 Gematria', func: calculateGematriaNumbers },
-                    { name: '🌳 Kabbalah Tree', func: calculateKabbalahNumbers },
-                    { name: '👼 Angel Numbers', func: calculateAngelNumbers },
-                    { name: '☯ I Ching', func: calculateIChing },
-                    { name: '📊 Frequency Analysis', func: calculateFrequencyAnalysis },
-                    { name: '🔺 Sacred Geometry', func: calculateSacredGeometry }
-                ];
-                
-                let html = '';
-                
-                methods.forEach(method => {
-                    const result = method.func();
-                    html += `
-                        <div class="method-group">
-                            <div class="method-title">${method.name}</div>
-                            <div class="numbers">
-                                ${result.whites.map(num => `<span class="white-ball">${num}</span>`).join('')}
-                                <span class="red-ball">${result.red}</span>
+                try {
+                    const methods = [
+                        { name: '🌙 Lunar Calculations', func: calculateLunarNumbers },
+                        { name: '🌀 Fibonacci Sequence', func: calculateFibonacciNumbers },
+                        { name: '✨ Golden Ratio', func: calculateGoldenRatioNumbers },
+                        { name: '🔢 Pi Sequence', func: calculatePiNumbers },
+                        { name: '📜 Gematria', func: calculateGematriaNumbers },
+                        { name: '🌳 Kabbalah Tree', func: calculateKabbalahNumbers },
+                        { name: '👼 Angel Numbers', func: calculateAngelNumbers },
+                        { name: '☯ I Ching', func: calculateIChing },
+                        { name: '📊 Frequency Analysis', func: calculateFrequencyAnalysis },
+                        { name: '🔺 Sacred Geometry', func: calculateSacredGeometry }
+                    ];
+                    
+                    let html = '';
+                    
+                    methods.forEach((method, index) => {
+                        try {
+                            logDebug(`Calculating method: ${method.name}`);
+                            const result = method.func();
+                            
+                            html += `
+                                <div class="method-group">
+                                    <div class="method-title">${method.name}</div>
+                                    <div class="numbers">
+                                        ${result.whites.map(num => `<span class="white-ball">${num}</span>`).join('')}
+                                        <span class="red-ball">${result.red}</span>
+                                    </div>
+                                    <div class="calculation-note">${result.note}</div>
+                                </div>
+                            `;
+                        } catch (error) {
+                            logError(`Error in method ${method.name}`, {
+                                error: error.message,
+                                stack: error.stack
+                            });
+                            
+                            html += `
+                                <div class="method-group">
+                                    <div class="method-title">${method.name}</div>
+                                    <div class="calculation-note" style="color: #dc143c;">Error: ${error.message}</div>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    resultsDiv.innerHTML = html;
+                    
+                    const now = new Date();
+                    const dataStatus = LOTTERY_DATA ? 
+                        `Data: ${LOTTERY_DATA.results?.length || 0} drawings` : 
+                        'Data: Not loaded';
+                    
+                    timestampDiv.innerHTML = `Generated: ${now.toLocaleString()}<br>${dataStatus}<br>Next lunar phase in ${29.53 - (getCurrentLunarPhase() * 3.69)} days`;
+                    
+                    logDebug('Number generation completed');
+                    
+                } catch (error) {
+                    logError('Error during number generation', {
+                        error: error.message,
+                        stack: error.stack
+                    });
+                    
+                    resultsDiv.innerHTML = `
+                        <div class="error-box">
+                            <h4>Generation Error</h4>
+                            <div>Failed to generate numbers: ${error.message}</div>
+                            <div style="margin-top: 10px;">
+                                <button class="toggle-btn" onclick="toggleErrors()">Show Error Details</button>
                             </div>
-                            <div class="calculation-note">${result.note}</div>
                         </div>
                     `;
-                });
-                
-                resultsDiv.innerHTML = html;
-                
-                const now = new Date();
-                timestampDiv.innerHTML = `Generated: ${now.toLocaleString()}<br>Next lunar phase in ${29.53 - (getCurrentLunarPhase() * 3.69)} days`;
+                }
             }, 1500);
         }
         
         // Load lottery data and generate initial numbers on load
         window.onload = async function() {
-            await loadLotteryData();
-            setTimeout(generateAllMethods, 1000);
+            logDebug('App starting up');
+            try {
+                await loadLotteryData();
+                setTimeout(generateAllMethods, 1000);
+            } catch (error) {
+                logError('Failed to initialize app', {
+                    error: error.message,
+                    stack: error.stack
+                });
+            }
         };
     </script>
 </body>
