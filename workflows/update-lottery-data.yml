@@ -1,1 +1,43 @@
+name: Update Lottery Data
 
+on:
+  schedule:
+    # Runs every Wednesday and Saturday at 11:30 PM ET (3:30 AM UTC Thursday/Sunday)
+    - cron: '30 3 * * 4,1'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  update-lottery-data:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    - name: Install dependencies
+      run: |
+        npm init -y
+        npm install axios cheerio
+    
+    - name: Update lottery data
+      run: node update-lottery-data.js
+    
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add lottery-data.json
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Auto-update lottery data $(date '+%Y-%m-%d %H:%M:%S')"
+          git push
+        fi
