@@ -32,97 +32,90 @@ async function fetchNYLotteryData() {
         });
         
         console.log('📋 Available columns:', Object.keys(columnMap));
-        console.log('🔍 Sample first 3 rows for debugging:');
-        apiData.data.slice(0, 3).forEach((row, i) => {
-            const drawDate = row[columnMap['Draw Date']] || row[1];
-            const winningNumbers = row[columnMap['Winning Numbers']] || row[2];
-            console.log(`Row ${i}: Date=${drawDate}, Numbers=${winningNumbers}`);
-        });
         
-        // Get ALL data and sort by date to find the latest
-        const allDrawings = apiData.data;
+        // Get the LATEST 50 drawings (data is oldest first, so take from the END)
+        const totalRecords = apiData.data.length;
+        const recentDrawings = apiData.data.slice(-50); // Take last 50 (most recent)
+        
+        console.log(`📅 Taking records ${totalRecords - 50} to ${totalRecords} (most recent)`);
         
         const processedResults = [];
         
-        allDrawings.forEach(row => {
+        // Process in reverse order so newest is first in our results
+        recentDrawings.reverse().forEach(row => {
             try {
-                // Extract data based on column mapping
-                const drawDate = row[columnMap['Draw Date']] || row[1];
-                const winningNumbers = row[columnMap['Winning Numbers']] || row[2];
-                const multiplier = row[columnMap['Multiplier']] || row[3];
+                // Based on your example format:
+                // Index 8: "2025-05-31T00:00:00" (date)
+                // Index 9: "01 29 37 56 68 13" (winning numbers)
+                // Index 10: "2" (multiplier)
+                
+                const drawDate = row[8]; // Date column
+                const winningNumbers = row[9]; // Winning numbers column
+                const multiplier = row[10]; // Multiplier column
                 
                 if (!drawDate || !winningNumbers) {
-                    return; // Skip invalid rows
+                    console.log('⚠️  Skipping row with missing data:', row.slice(0, 12));
+                    return;
                 }
                 
                 // Parse the winning numbers
+                // Format: "01 29 37 56 68 13" (space separated)
                 const numbersStr = winningNumbers.toString().trim();
-                const allNumbers = numbersStr.match(/\d+/g);
                 
-                if (!allNumbers || allNumbers.length < 6) {
-                    return; // Skip invalid number formats
+                // Extract numbers (split by spaces, remove leading zeros)
+                const allNumbers = numbersStr.split(' ').map(n => parseInt(n.trim()));
+                
+                if (!allNumbers || allNumbers.length !== 6) {
+                    console.log('⚠️  Invalid number format (expected 6 numbers):', numbersStr);
+                    return;
                 }
                 
-                // Convert to integers
-                const numbers = allNumbers.map(n => parseInt(n));
-                
                 // First 5 are white balls, last is red powerball
-                const whiteBalls = numbers.slice(0, 5).sort((a, b) => a - b);
-                const powerball = numbers[5];
+                const whiteBalls = allNumbers.slice(0, 5).sort((a, b) => a - b);
+                const powerball = allNumbers[5];
                 
                 // Validate number ranges
                 const validWhite = whiteBalls.every(n => n >= 1 && n <= 69);
                 const validRed = powerball >= 1 && powerball <= 26;
                 
                 if (!validWhite || !validRed) {
-                    return; // Skip invalid ranges
+                    console.log('⚠️  Numbers out of range:', { whiteBalls, powerball });
+                    return;
                 }
                 
-                // Parse date and create Date object for sorting
+                // Parse date (format: "2025-05-31T00:00:00")
                 const date = new Date(drawDate);
                 const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD
                 
                 processedResults.push({
                     date: formattedDate,
-                    dateObj: date, // Keep for sorting
                     white: whiteBalls,
                     red: powerball,
-                    jackpot: "0",
+                    jackpot: "0", // NY.gov doesn't provide jackpot amounts
                     multiplier: multiplier || "1",
-                    raw_data: row
+                    original_index: apiData.data.indexOf(row) // For debugging
                 });
                 
             } catch (error) {
-                // Skip problematic rows
-                return;
+                console.log('⚠️  Error processing row:', error.message, row.slice(0, 12));
             }
         });
+        
+        console.log(`✅ Successfully processed ${processedResults.length} drawings`);
         
         if (processedResults.length === 0) {
             throw new Error('No valid lottery results found in API response');
         }
         
-        // Sort by date - NEWEST FIRST
-        processedResults.sort((a, b) => b.dateObj - a.dateObj);
-        
-        // Remove the dateObj helper property
-        processedResults.forEach(result => delete result.dateObj);
-        
-        // Take only the most recent 50 for efficiency
-        const recentResults = processedResults.slice(0, 50);
-        
-        console.log(`✅ Successfully processed ${recentResults.length} drawings`);
-        console.log(`📅 Date range: ${recentResults[recentResults.length-1].date} to ${recentResults[0].date}`);
-        
         // Display latest result for verification
-        const latest = recentResults[0];
+        const latest = processedResults[0];
         console.log('🎯 Latest drawing:', {
             date: latest.date,
             white: latest.white,
             red: latest.red
         });
         
-        return recentResults;
+        return processedResults;
         
     } catch (error) {
         console.error('❌ Error fetching NY lottery data:', error);
