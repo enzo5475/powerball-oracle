@@ -1,174 +1,288 @@
-name: Update Lottery Data (NY.gov API)
+const fs = require('fs');
 
-on:
-  schedule:
-    # Runs every Wednesday and Saturday at 11:30 PM ET (3:30 AM UTC Thursday/Sunday)
-    - cron: '30 3 * * 4,1'
-  workflow_dispatch: # Allows manual trigger from GitHub UI
-  push:
-    paths:
-      - 'fetch-ny-lottery-data.js'  # Also run when fetcher script is updated
+/**
+ * Fetches latest Powerball data from NY.gov official API
+ * API URL: https://data.ny.gov/api/views/d6yy-54nr/rows.json
+ * Data is sorted from newest to oldest (today back to 2010)
+ */
 
-env:
-  TZ: America/New_York  # Set timezone to Eastern Time
-
-jobs:
-  update-lottery-data:
-    runs-on: ubuntu-latest
-    
-    permissions:
-      contents: write
-      actions: read
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Fetch full history for proper git operations
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-    
-    - name: Install dependencies
-      run: |
-        npm init -y
-        npm install node-fetch
-    
-    - name: Verify lottery data file exists
-      run: |
-        if [ ! -f lottery-data.json ]; then
-          echo "Creating initial lottery-data.json..."
-          cat > lottery-data.json << 'EOF'
-        {
-          "last_updated": "2025-01-01T00:00:00Z",
-          "results": [],
-          "frequency": {
-            "white": {},
-            "red": {}
-          },
-          "source": "NY.gov Official API"
+async function fetchNYLotteryData() {
+    try {
+        console.log('🎰 Fetching Powerball data from NY.gov API...');
+        
+        const response = await fetch('https://data.ny.gov/api/views/d6yy-54nr/rows.json');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        EOF
-        fi
-    
-    - name: Fetch latest data from NY.gov API
-      run: |
-        echo "🎰 Starting NY.gov Powerball data update..."
-        echo "Current time: $(date)"
-        echo "Timezone: $TZ"
-        echo "🌐 Fetching from: https://data.ny.gov/api/views/d6yy-54nr/rows.json"
-        node fetch-ny-lottery-data.js
-      continue-on-error: false
-    
-    - name: Verify update results
-      run: |
-        echo "📊 Checking updated lottery data..."
-        if [ -f lottery-data.json ]; then
-          echo "✅ lottery-data.json exists"
-          echo "File size: $(wc -c < lottery-data.json) bytes"
-          
-          # Check if jq is available for JSON parsing
-          if command -v jq &> /dev/null; then
-            echo "Number of results: $(jq '.results | length' lottery-data.json 2>/dev/null || echo 'Could not parse JSON')"
-            echo "Last updated: $(jq -r '.last_updated' lottery-data.json 2>/dev/null || echo 'Could not parse timestamp')"
-            echo "Data source: $(jq -r '.source' lottery-data.json 2>/dev/null || echo 'Could not parse source')"
-            
-            # Show latest drawing info
-            echo "Latest drawing date: $(jq -r '.results[0].date // "No data"' lottery-data.json 2>/dev/null)"
-            echo "Latest white balls: $(jq -r '.results[0].white // [] | join(",")' lottery-data.json 2>/dev/null)"
-            echo "Latest powerball: $(jq -r '.results[0].red // "N/A"' lottery-data.json 2>/dev/null)"
-          else
-            echo "⚠️  jq not available, skipping detailed JSON analysis"
-          fi
-        else
-          echo "❌ lottery-data.json missing!"
-          exit 1
-        fi
-    
-    - name: Check for changes
-      id: check_changes
-      run: |
-        if git diff --quiet lottery-data.json; then
-          echo "No changes detected in lottery-data.json"
-          echo "has_changes=false" >> $GITHUB_OUTPUT
-        else
-          echo "Changes detected in lottery-data.json"
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-          echo "📈 Changes preview:"
-          git diff --stat lottery-data.json
-        fi
-    
-    - name: Configure git
-      if: steps.check_changes.outputs.has_changes == 'true'
-      run: |
-        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-    
-    - name: Commit and push changes
-      if: steps.check_changes.outputs.has_changes == 'true'
-      run: |
-        echo "📝 Committing lottery data updates..."
-        git add lottery-data.json
         
-        # Extract latest drawing info for commit message (with fallbacks)
-        if command -v jq &> /dev/null; then
-          LATEST_DATE=$(jq -r '.results[0].date // "unknown"' lottery-data.json 2>/dev/null || echo "unknown")
-          LATEST_NUMBERS=$(jq -r '.results[0].white // [] | join(",")' lottery-data.json 2>/dev/null || echo "unknown")
-          LATEST_POWERBALL=$(jq -r '.results[0].red // "?"' lottery-data.json 2>/dev/null || echo "?")
-          TOTAL_RESULTS=$(jq '.results | length' lottery-data.json 2>/dev/null || echo "0")
-          DATA_SOURCE=$(jq -r '.source // "NY.gov API"' lottery-data.json 2>/dev/null || echo "NY.gov API")
-        else
-          LATEST_DATE="unknown"
-          LATEST_NUMBERS="unknown"
-          LATEST_POWERBALL="?"
-          TOTAL_RESULTS="unknown"
-          DATA_SOURCE="NY.gov API"
-        fi
+        const apiData = await response.json();
+        console.log(`📊 Received ${apiData.data.length} total records from NY.gov`);
         
-        COMMIT_MSG="🎰 Auto-update: Powerball $LATEST_DATE [$LATEST_NUMBERS] PB:$LATEST_POWERBALL ($TOTAL_RESULTS total) - $DATA_SOURCE"
+        // Parse the data structure
+        // apiData.meta.view.columns contains column definitions
+        // apiData.data contains the actual data rows
         
-        git commit -m "$COMMIT_MSG"
-        git push
+        // Find column indices (NY.gov API structure)
+        const columns = apiData.meta.view.columns;
+        const columnMap = {};
         
-        echo "✅ Successfully pushed lottery data update"
-        echo "📊 Commit message: $COMMIT_MSG"
+        columns.forEach((col, index) => {
+            columnMap[col.name] = index;
+        });
+        
+        console.log('📋 Available columns:', Object.keys(columnMap));
+        console.log(`📊 Total records in data array: ${apiData.data.length}`);
+        console.log('🔍 Checking data array structure...');
+        
+        // Check both ends of the data array to understand the order
+        console.log('First row (index 0):', {
+            date: apiData.data[0][columnMap['Draw Date']] || apiData.data[0][1],
+            numbers: apiData.data[0][columnMap['Winning Numbers']] || apiData.data[0][2]
+        });
+        
+        const lastIndex = apiData.data.length - 1;
+        console.log(`Last row (index ${lastIndex}):`, {
+            date: apiData.data[lastIndex][columnMap['Draw Date']] || apiData.data[lastIndex][1],
+            numbers: apiData.data[lastIndex][columnMap['Winning Numbers']] || apiData.data[lastIndex][2]
+        });
+        
+        // Get today's date for comparison
+        const today = new Date();
+        console.log(`📅 Today's date: ${today.toISOString().split('T')[0]}`);
+        
+        // Process ALL data and find the one closest to today
+        const processedResults = [];
+        let closestToToday = null;
+        let smallestDateDiff = Infinity;
+        
+        apiData.data.forEach((row, index) => {
+            try {
+                const drawDate = row[columnMap['Draw Date']] || row[1];
+                const winningNumbers = row[columnMap['Winning Numbers']] || row[2];
+                const multiplier = row[columnMap['Multiplier']] || row[3];
+                
+                if (!drawDate || !winningNumbers) {
+                    return; // Skip invalid rows
+                }
+                
+                // Parse date - handle format: 2025-05-31T00:00:00
+                const date = new Date(drawDate);
+                const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD
+                
+                // Calculate days difference from today
+                const daysDiff = Math.abs(today - date) / (1000 * 60 * 60 * 24);
+                
+                // Parse the winning numbers
+                const numbersStr = winningNumbers.toString().trim();
+                const allNumbers = numbersStr.match(/\d+/g);
+                
+                if (!allNumbers || allNumbers.length < 6) {
+                    return; // Skip invalid number formats
+                }
+                
+                // Convert to integers
+                const numbers = allNumbers.map(n => parseInt(n));
+                
+                // First 5 are white balls, last is red powerball
+                const whiteBalls = numbers.slice(0, 5).sort((a, b) => a - b);
+                const powerball = numbers[5];
+                
+                // Validate number ranges
+                const validWhite = whiteBalls.every(n => n >= 1 && n <= 69);
+                const validRed = powerball >= 1 && powerball <= 26;
+                
+                if (!validWhite || !validRed) {
+                    return; // Skip invalid ranges
+                }
+                
+                const result = {
+                    date: formattedDate,
+                    dateObj: date,
+                    white: whiteBalls,
+                    red: powerball,
+                    jackpot: "0",
+                    multiplier: multiplier || "1",
+                    index: index,
+                    daysDiff: daysDiff,
+                    raw_data: row
+                };
+                
+                processedResults.push(result);
+                
+                // Track the closest date to today
+                if (daysDiff < smallestDateDiff) {
+                    smallestDateDiff = daysDiff;
+                    closestToToday = result;
+                }
+                
+            } catch (error) {
+                return; // Skip problematic rows
+            }
+        });
+        
+        if (processedResults.length === 0) {
+            throw new Error('No valid lottery results found in API response');
+        }
+        
+        // Sort by date - NEWEST FIRST
+        processedResults.sort((a, b) => b.dateObj - a.dateObj);
+        
+        // Remove the helper properties
+        processedResults.forEach(result => {
+            delete result.dateObj;
+            delete result.daysDiff;
+        });
+        
+        console.log(`✅ Successfully processed ${processedResults.length} drawings`);
+        console.log(`📅 Date range: ${processedResults[processedResults.length-1].date} to ${processedResults[0].date}`);
+        
+        // Show the newest drawing (should be closest to today)
+        const newest = processedResults[0];
+        console.log('🎯 Newest drawing found:', {
+            date: newest.date,
+            white: newest.white,
+            red: newest.red,
+            arrayIndex: newest.index
+        });
+        
+        // Also show the closest to today for comparison
+        if (closestToToday) {
+            console.log('📍 Closest to today:', {
+                date: closestToToday.date,
+                white: closestToToday.white,
+                red: closestToToday.red,
+                arrayIndex: closestToToday.index,
+                daysDifference: closestToToday.daysDiff.toFixed(1)
+            });
+        }
+        
+        // Take only the most recent 100 for efficiency
+        const recentResults = processedResults.slice(0, 100);
+        
+        return recentResults;
+        
+    } catch (error) {
+        console.error('❌ Error fetching NY lottery data:', error);
+        throw error;
+    }
+}
+
+function updateFrequencies(data, results) {
+    console.log('📊 Calculating frequency statistics...');
     
-    - name: Update summary
-      if: always()
-      run: |
-        echo "## 🎰 NY.gov Powerball Data Update Summary" >> $GITHUB_STEP_SUMMARY
-        echo "**Timestamp:** $(date)" >> $GITHUB_STEP_SUMMARY
-        echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Data Source:** NY.gov Official API" >> $GITHUB_STEP_SUMMARY
-        echo "**API URL:** https://data.ny.gov/api/views/d6yy-54nr/rows.json" >> $GITHUB_STEP_SUMMARY
-        
-        if [ -f lottery-data.json ] && command -v jq &> /dev/null; then
-          TOTAL_RESULTS=$(jq '.results | length' lottery-data.json 2>/dev/null || echo "0")
-          LAST_UPDATE=$(jq -r '.last_updated' lottery-data.json 2>/dev/null || echo "unknown")
-          LATEST_DATE=$(jq -r '.results[0].date // "no data"' lottery-data.json 2>/dev/null)
-          LATEST_NUMBERS=$(jq -r '.results[0].white // [] | join(", ")' lottery-data.json 2>/dev/null)
-          LATEST_PB=$(jq -r '.results[0].red // "N/A"' lottery-data.json 2>/dev/null)
-          
-          echo "**Total Results:** $TOTAL_RESULTS" >> $GITHUB_STEP_SUMMARY
-          echo "**Last Updated:** $LAST_UPDATE" >> $GITHUB_STEP_SUMMARY
-          echo "**Latest Drawing:** $LATEST_DATE" >> $GITHUB_STEP_SUMMARY
-          echo "**Latest Numbers:** [$LATEST_NUMBERS] PB: $LATEST_PB" >> $GITHUB_STEP_SUMMARY
-          
-          if [ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]; then
-            echo "**Changes:** ✅ New data added and committed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "**Changes:** ℹ️ No new data (up to date)" >> $GITHUB_STEP_SUMMARY
-          fi
-        else
-          echo "**Error:** ❌ lottery-data.json not found or jq unavailable" >> $GITHUB_STEP_SUMMARY
-        fi
+    // Initialize frequency counters
+    for (let i = 1; i <= 69; i++) {
+        data.frequency.white[i.toString()] = 0;
+    }
+    for (let i = 1; i <= 26; i++) {
+        data.frequency.red[i.toString()] = 0;
+    }
     
-    - name: Notify on failure
-      if: failure()
-      run: |
-        echo "❌ NY.gov lottery data update failed!"
-        echo "Check the logs above for details."
-        echo "The app will continue using existing data until the next successful update."
-        echo "🌐 API URL: https://data.ny.gov/api/views/d6yy-54nr/rows.json"
+    // Count frequencies from all results
+    results.forEach(result => {
+        result.white.forEach(num => {
+            data.frequency.white[num.toString()]++;
+        });
+        data.frequency.red[result.red.toString()]++;
+    });
+    
+    // Show top frequent numbers
+    const topWhite = Object.entries(data.frequency.white)
+        .map(([num, freq]) => ({ num: parseInt(num), freq }))
+        .sort((a, b) => b.freq - a.freq)
+        .slice(0, 5);
+    
+    const topRed = Object.entries(data.frequency.red)
+        .map(([num, freq]) => ({ num: parseInt(num), freq }))
+        .sort((a, b) => b.freq - a.freq)
+        .slice(0, 3);
+    
+    console.log('🔥 Most frequent white balls:', topWhite.map(x => `${x.num}(${x.freq})`).join(', '));
+    console.log('🔴 Most frequent red balls:', topRed.map(x => `${x.num}(${x.freq})`).join(', '));
+}
+
+async function updateLotteryDataFile() {
+    try {
+        console.log('🎰 Starting NY.gov lottery data update...');
+        
+        // Read existing data or create new structure
+        let data;
+        try {
+            const fileContent = fs.readFileSync('lottery-data.json', 'utf8');
+            data = JSON.parse(fileContent);
+            console.log(`📁 Loaded existing data with ${data.results?.length || 0} results`);
+        } catch (error) {
+            console.log('📁 Creating new lottery data file...');
+            data = {
+                last_updated: new Date().toISOString(),
+                results: [],
+                frequency: {
+                    white: {},
+                    red: {}
+                },
+                source: "NY.gov Official API"
+            };
+        }
+        
+        // Fetch latest results from NY.gov
+        const newResults = await fetchNYLotteryData();
+        
+        // Check if we need to add new results
+        const existingDates = new Set(data.results.map(r => r.date));
+        const newEntries = newResults.filter(result => !existingDates.has(result.date));
+        
+        if (newEntries.length === 0) {
+            console.log('ℹ️  No new drawings found. Data is up to date.');
+            return;
+        }
+        
+        console.log(`➕ Adding ${newEntries.length} new drawings`);
+        
+        // Add new results to beginning (most recent first)
+        data.results = [...newEntries, ...data.results];
+        
+        // Keep only last 200 results
+        if (data.results.length > 200) {
+            data.results = data.results.slice(0, 200);
+            console.log('🗂️  Trimmed to last 200 results');
+        }
+        
+        // Recalculate frequencies
+        updateFrequencies(data, data.results);
+        
+        // Update metadata
+        data.last_updated = new Date().toISOString();
+        data.source = "NY.gov Official API";
+        
+        // Write updated data back to file
+        fs.writeFileSync('lottery-data.json', JSON.stringify(data, null, 2));
+        
+        console.log('✅ Successfully updated lottery-data.json');
+        console.log(`📊 Total results: ${data.results.length}`);
+        console.log(`📅 Latest drawing: ${data.results[0].date}`);
+        console.log(`🕐 Last updated: ${data.last_updated}`);
+        
+    } catch (error) {
+        console.error('💥 Error updating lottery data:', error);
+        process.exit(1);
+    }
+}
+
+// For Node.js environments (GitHub Actions)
+if (typeof require !== 'undefined' && require.main === module) {
+    // Add fetch polyfill for Node.js
+    if (typeof fetch === 'undefined') {
+        global.fetch = require('node-fetch');
+    }
+    
+    updateLotteryDataFile();
+}
+
+// For browser environments (if needed)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        fetchNYLotteryData,
+        updateLotteryDataFile
+    };
+}
