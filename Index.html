@@ -13,8 +13,8 @@
         
         body {
             font-family: 'Courier New', monospace;
-            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
-            color: #00ff41;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d3a 50%, #3a3a4e 100%);
+            color: #7fb069;
             min-height: 100vh;
             padding: 10px;
         }
@@ -22,18 +22,18 @@
         .container {
             max-width: 400px;
             margin: 0 auto;
-            background: rgba(0, 0, 0, 0.8);
-            border: 2px solid #00ff41;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #7fb069;
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+            box-shadow: 0 0 20px rgba(127, 176, 105, 0.3);
         }
         
         h1 {
             text-align: center;
             margin-bottom: 20px;
             color: #ffffff;
-            text-shadow: 0 0 10px #00ff41;
+            text-shadow: 0 0 10px #7fb069;
             font-size: 1.5em;
         }
         
@@ -58,14 +58,14 @@
         
         .method-group {
             margin-bottom: 15px;
-            background: rgba(0, 255, 65, 0.05);
-            border-left: 3px solid #00ff41;
+            background: rgba(127, 176, 105, 0.05);
+            border-left: 3px solid #7fb069;
             padding: 10px;
             border-radius: 5px;
         }
         
         .method-title {
-            color: #00ff41;
+            color: #7fb069;
             font-weight: bold;
             margin-bottom: 5px;
             font-size: 0.9em;
@@ -108,7 +108,7 @@
         
         .loading {
             text-align: center;
-            color: #00ff41;
+            color: #7fb069;
             font-style: italic;
         }
         
@@ -147,17 +147,23 @@
             'T': 200, 'U': 300, 'V': 400, 'W': 500, 'X': 600, 'Y': 700, 'Z': 800
         };
         
-        // Historical Powerball frequency data (sample - would be updated with real data)
-        const HISTORICAL_FREQUENCY = {
-            white: {
-                1: 15, 2: 12, 3: 18, 4: 20, 5: 16, 6: 22, 7: 14, 8: 25, 9: 19, 10: 17,
-                // ... continuing pattern for all numbers 1-69
-            },
-            red: {
-                1: 8, 2: 12, 3: 15, 4: 9, 5: 18, 6: 11, 7: 14, 8: 16, 9: 13, 10: 10
-                // ... continuing for all numbers 1-26
+        // Live lottery data
+        let LOTTERY_DATA = null;
+        
+        async function loadLotteryData() {
+            try {
+                const response = await fetch('lottery-data.json');
+                LOTTERY_DATA = await response.json();
+                console.log(`Loaded ${LOTTERY_DATA.results.length} lottery results`);
+            } catch (error) {
+                console.log('Using fallback lottery data');
+                // Fallback data if file doesn't exist yet
+                LOTTERY_DATA = {
+                    results: [],
+                    frequency: { white: {}, red: {} }
+                };
             }
-        };
+        }
         
         function getCurrentLunarPhase() {
             const now = new Date();
@@ -190,7 +196,7 @@
             return {
                 whites: whites.slice(0, 5).sort((a, b) => a - b),
                 red: red,
-                note: `Lunar Phase: ${phase}/8, Lunar influence: ${lunarDay}`
+                note: `🌙 Dynamic - Lunar Phase: ${phase}/8, Lunar influence: ${lunarDay}`
             };
         }
         
@@ -217,7 +223,7 @@
             return {
                 whites: whites.slice(0, 5).sort((a, b) => a - b),
                 red: red,
-                note: `Fibonacci sequence starting at index ${startIndex}`
+                note: `🌀 Static - Fibonacci sequence starting at index ${startIndex}`
             };
         }
         
@@ -242,7 +248,7 @@
             return {
                 whites: whites.slice(0, 5).sort((a, b) => a - b),
                 red: red,
-                note: `Golden Ratio φ = ${GOLDEN_RATIO.toFixed(6)}`
+                note: `✨ Hourly - Golden Ratio φ = ${GOLDEN_RATIO.toFixed(6)}`
             };
         }
         
@@ -274,7 +280,7 @@
             return {
                 whites: whites.slice(0, 5).sort((a, b) => a - b),
                 red: red,
-                note: `π digits starting at position ${startIndex}`
+                note: `🔢 Daily - π digits starting at position ${startIndex}`
             };
         }
         
@@ -304,7 +310,7 @@
             return {
                 whites: whites.slice(0, 5).sort((a, b) => a - b),
                 red: red,
-                note: `Gematria sum of "${dateString}": ${gematriaSum}`
+                note: `📜 Daily - Gematria sum of "${dateString}": ${gematriaSum}`
             };
         }
         
@@ -334,7 +340,7 @@
             return {
                 whites: whites.slice(0, 5).sort((a, b) => a - b),
                 red: red,
-                note: `Tree of Life: 10 Sephirot, 22 Paths, Day: ${dayOfMonth}`
+                note: `🌳 Daily - Tree of Life: 10 Sephirot, 22 Paths, Day: ${dayOfMonth}`
             };
         }
         
@@ -364,7 +370,7 @@
             return {
                 whites: whites.slice(0, 5).sort((a, b) => a - b),
                 red: red,
-                note: `Angel pattern: ${repeatingDigit}${repeatingDigit}${repeatingDigit}, Time: ${hour}:${minute}`
+                note: `👼 Hourly - Angel pattern: ${repeatingDigit}${repeatingDigit}${repeatingDigit}, Time: ${hour}:${minute}`
             };
         }
         
@@ -393,25 +399,52 @@
             return {
                 whites: whites.slice(0, 5).sort((a, b) => a - b),
                 red: red,
-                note: `I Ching Hexagram: ${hexagram}/64, Day: ${dayOfYear}`
+                note: `☯ Daily - I Ching Hexagram: ${hexagram}/64, Day: ${dayOfYear}`
             };
         }
         
         function calculateFrequencyAnalysis() {
-            // This would use real historical data - using sample for now
-            const mostFrequent = [6, 8, 20, 26, 32]; // Sample most frequent
-            const leastFrequent = [1, 15, 45, 60, 67]; // Sample least frequent
+            if (!LOTTERY_DATA || !LOTTERY_DATA.frequency) {
+                return {
+                    whites: [6, 8, 20, 26, 32].sort((a, b) => a - b),
+                    red: 13,
+                    note: `📊 Static - Using fallback frequency data`
+                };
+            }
+            
+            // Get most frequent white numbers
+            const whiteFreq = Object.entries(LOTTERY_DATA.frequency.white)
+                .map(([num, freq]) => ({ num: parseInt(num), freq: parseInt(freq) }))
+                .sort((a, b) => b.freq - a.freq);
+            
+            // Get most frequent red numbers
+            const redFreq = Object.entries(LOTTERY_DATA.frequency.red)
+                .map(([num, freq]) => ({ num: parseInt(num), freq: parseInt(freq) }))
+                .sort((a, b) => b.freq - a.freq);
             
             const now = new Date();
-            const useHot = now.getDate() % 2 === 0; // Alternate between hot and cold
+            const useHot = now.getDate() % 2 === 0;
             
-            const whites = useHot ? [...mostFrequent] : [...leastFrequent];
-            const red = useHot ? 13 : 7; // Sample values
+            let whites, red;
+            
+            if (useHot) {
+                // Use hot numbers (most frequent)
+                whites = whiteFreq.slice(0, 5).map(item => item.num);
+                red = redFreq[0]?.num || 1;
+            } else {
+                // Use cold numbers (least frequent)
+                whites = whiteFreq.slice(-5).map(item => item.num);
+                red = redFreq[redFreq.length - 1]?.num || 26;
+            }
+            
+            const totalDrawings = LOTTERY_DATA.results.length;
+            const lastUpdate = LOTTERY_DATA.last_updated ? 
+                new Date(LOTTERY_DATA.last_updated).toLocaleDateString() : 'Unknown';
             
             return {
                 whites: whites.sort((a, b) => a - b),
                 red: red,
-                note: `${useHot ? 'Hot' : 'Cold'} numbers based on frequency analysis`
+                note: `📊 Dynamic - ${useHot ? 'Hot' : 'Cold'} numbers from ${totalDrawings} drawings (Updated: ${lastUpdate})`
             };
         }
         
@@ -444,7 +477,7 @@
             return {
                 whites: whites.slice(0, 5).sort((a, b) => a - b),
                 red: red,
-                note: `Sacred geometry: √3, φ, π, e, √2 on day ${dayOfMonth}`
+                note: `🔺 Daily - Sacred geometry: √3, φ, π, e, √2 on day ${dayOfMonth}`
             };
         }
         
@@ -491,8 +524,9 @@
             }, 1500);
         }
         
-        // Generate initial numbers on load
-        window.onload = function() {
+        // Load lottery data and generate initial numbers on load
+        window.onload = async function() {
+            await loadLotteryData();
             setTimeout(generateAllMethods, 1000);
         };
     </script>
