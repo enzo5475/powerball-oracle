@@ -22,7 +22,8 @@ function logError(message, details = null) {
         ERROR_LOG = ERROR_LOG.slice(-20);
     }
     
-    updateErrorDisplay();
+    // Force update display immediately
+    setTimeout(updateErrorDisplay, 100);
     return errorEntry;
 }
 
@@ -43,7 +44,8 @@ function logDebug(message, data = null) {
         DEBUG_INFO = DEBUG_INFO.slice(-30);
     }
     
-    updateDebugDisplay();
+    // Force update display immediately
+    setTimeout(updateDebugDisplay, 100);
     return debugEntry;
 }
 
@@ -63,40 +65,43 @@ function logWarning(message, details = null) {
         ERROR_LOG = ERROR_LOG.slice(-20);
     }
     
-    updateErrorDisplay();
+    setTimeout(updateErrorDisplay, 100);
     return warningEntry;
 }
 
 // ===== DISPLAY UPDATE FUNCTIONS =====
 function updateErrorDisplay() {
     const errorBox = document.getElementById('error-status');
-    if (!errorBox) return;
-    
-    if (ERROR_LOG.length === 0) {
-        errorBox.style.display = 'none';
+    if (!errorBox) {
+        console.error('Error box not found!');
         return;
     }
     
-    const recent = ERROR_LOG.slice(-5); // Show last 5 errors/warnings
+    if (ERROR_LOG.length === 0) {
+        errorBox.innerHTML = '<h4>🚨 Error & Warning Log</h4><div>No errors or warnings</div>';
+        return;
+    }
+    
+    const recent = ERROR_LOG.slice(-10); // Show last 10 errors/warnings
     let html = '<h4>🚨 Error & Warning Log</h4>';
     
     recent.forEach(entry => {
         const icon = entry.type === 'warning' ? '⚠️' : '❌';
-        const typeClass = entry.type === 'warning' ? 'warning' : 'error';
         
         html += `
-            <div class="log-entry ${typeClass}">
-                <div class="log-header">
-                    <span class="log-icon">${icon}</span>
-                    <span class="log-time">${entry.timestamp}</span>
+            <div style="margin-bottom: 10px; padding: 8px; background: rgba(255,0,0,0.1); border-radius: 4px;">
+                <div style="font-weight: bold; color: #ff6666;">
+                    ${icon} ${entry.timestamp}
                 </div>
-                <div class="log-message">${entry.message}</div>
+                <div style="margin: 4px 0; color: #ffcccc;">
+                    ${entry.message}
+                </div>
         `;
         
         if (entry.details) {
             html += `
-                <div class="log-details">
-                    <pre>${JSON.stringify(entry.details, null, 2)}</pre>
+                <div style="background: rgba(0,0,0,0.3); padding: 4px; border-radius: 2px; font-size: 0.8em; color: #ccc; margin-top: 4px;">
+                    <pre style="margin: 0; white-space: pre-wrap;">${JSON.stringify(entry.details, null, 2)}</pre>
                 </div>
             `;
         }
@@ -104,8 +109,8 @@ function updateErrorDisplay() {
         html += '</div>';
     });
     
-    if (ERROR_LOG.length > 5) {
-        html += `<div class="log-summary">... and ${ERROR_LOG.length - 5} earlier entries</div>`;
+    if (ERROR_LOG.length > 10) {
+        html += `<div style="text-align: center; color: #999; font-style: italic;">... and ${ERROR_LOG.length - 10} earlier entries</div>`;
     }
     
     errorBox.innerHTML = html;
@@ -113,27 +118,34 @@ function updateErrorDisplay() {
 
 function updateDebugDisplay() {
     const debugBox = document.getElementById('debug-info');
-    if (!debugBox) return;
+    if (!debugBox) {
+        console.error('Debug box not found!');
+        return;
+    }
     
-    if (DEBUG_INFO.length === 0) return;
+    if (DEBUG_INFO.length === 0) {
+        debugBox.innerHTML = '<h4>🔍 Debug Information</h4><div>No debug information yet</div>';
+        return;
+    }
     
-    const recent = DEBUG_INFO.slice(-10); // Show last 10 debug entries
+    const recent = DEBUG_INFO.slice(-15); // Show last 15 debug entries
     let html = '<h4>🔍 Debug Information</h4>';
     
     recent.forEach(entry => {
         html += `
-            <div class="debug-entry">
-                <div class="debug-header">
-                    <span class="debug-icon">🔍</span>
-                    <span class="debug-time">${entry.timestamp}</span>
+            <div style="margin-bottom: 8px; padding: 6px; background: rgba(0,100,200,0.1); border-radius: 4px;">
+                <div style="font-weight: bold; color: #66ccff;">
+                    🔍 ${entry.timestamp}
                 </div>
-                <div class="debug-message">${entry.message}</div>
+                <div style="margin: 4px 0; color: #ccddff;">
+                    ${entry.message}
+                </div>
         `;
         
         if (entry.data) {
             html += `
-                <div class="debug-data">
-                    <pre>${JSON.stringify(entry.data, null, 2)}</pre>
+                <div style="background: rgba(0,0,0,0.3); padding: 4px; border-radius: 2px; font-size: 0.8em; color: #aaa; margin-top: 4px;">
+                    <pre style="margin: 0; white-space: pre-wrap;">${JSON.stringify(entry.data, null, 2)}</pre>
                 </div>
             `;
         }
@@ -141,8 +153,8 @@ function updateDebugDisplay() {
         html += '</div>';
     });
     
-    if (DEBUG_INFO.length > 10) {
-        html += `<div class="debug-summary">... and ${DEBUG_INFO.length - 10} earlier entries</div>`;
+    if (DEBUG_INFO.length > 15) {
+        html += `<div style="text-align: center; color: #999; font-style: italic;">... and ${DEBUG_INFO.length - 15} earlier entries</div>`;
     }
     
     debugBox.innerHTML = html;
@@ -152,37 +164,35 @@ function updateDebugDisplay() {
 function toggleDebug() {
     const debugBox = document.getElementById('debug-info');
     if (!debugBox) {
-        logError('Debug box element not found');
+        alert('Debug box element not found!');
         return;
     }
     
-    const isVisible = debugBox.style.display !== 'none';
-    debugBox.style.display = isVisible ? 'none' : 'block';
-    
-    // Update debug display when showing
-    if (!isVisible) {
-        updateDebugDisplay();
+    if (debugBox.style.display === 'none' || !debugBox.style.display) {
+        debugBox.style.display = 'block';
+        updateDebugDisplay(); // Force update when showing
+        logDebug('Debug panel shown');
+    } else {
+        debugBox.style.display = 'none';
+        logDebug('Debug panel hidden');
     }
-    
-    logDebug(`Debug panel ${isVisible ? 'hidden' : 'shown'}`);
 }
 
 function toggleErrors() {
     const errorBox = document.getElementById('error-status');
     if (!errorBox) {
-        logError('Error box element not found');
+        alert('Error box element not found!');
         return;
     }
     
-    const isVisible = errorBox.style.display !== 'none';
-    errorBox.style.display = isVisible ? 'none' : 'block';
-    
-    // Update error display when showing
-    if (!isVisible) {
-        updateErrorDisplay();
+    if (errorBox.style.display === 'none' || !errorBox.style.display) {
+        errorBox.style.display = 'block';
+        updateErrorDisplay(); // Force update when showing
+        logDebug('Error panel shown');
+    } else {
+        errorBox.style.display = 'none';
+        logDebug('Error panel hidden');
     }
-    
-    logDebug(`Error panel ${isVisible ? 'hidden' : 'shown'}`);
 }
 
 // ===== SYSTEM HEALTH CHECKS =====
@@ -208,7 +218,7 @@ function checkSystemHealth() {
     
     // Check if required functions exist
     const requiredFunctions = [
-        'generateAllMethods', 'calculateLunarNumbers', 'fetchLiveWinningNumbers'
+        'generateAllMethods'
     ];
     
     requiredFunctions.forEach(funcName => {
@@ -247,35 +257,6 @@ function checkSystemHealth() {
     return healthReport;
 }
 
-// ===== PERFORMANCE MONITORING =====
-function measurePerformance(functionName, func, ...args) {
-    const startTime = performance.now();
-    
-    try {
-        const result = func(...args);
-        const endTime = performance.now();
-        const duration = endTime - startTime;
-        
-        logDebug(`Performance: ${functionName}`, {
-            duration: `${duration.toFixed(2)}ms`,
-            success: true
-        });
-        
-        return result;
-    } catch (error) {
-        const endTime = performance.now();
-        const duration = endTime - startTime;
-        
-        logError(`Performance: ${functionName} failed`, {
-            duration: `${duration.toFixed(2)}ms`,
-            error: error.message,
-            stack: error.stack
-        });
-        
-        throw error;
-    }
-}
-
 // ===== ERROR BOUNDARIES =====
 function safeExecute(functionName, func, fallbackValue = null) {
     try {
@@ -309,39 +290,6 @@ function safeAsyncExecute(functionName, asyncFunc, fallbackValue = null) {
     });
 }
 
-// ===== UTILITY FUNCTIONS =====
-function clearErrorLog() {
-    ERROR_LOG = [];
-    updateErrorDisplay();
-    logDebug('Error log cleared');
-}
-
-function clearDebugLog() {
-    DEBUG_INFO = [];
-    updateDebugDisplay();
-    logDebug('Debug log cleared');
-}
-
-function exportLogs() {
-    const exportData = {
-        timestamp: new Date().toISOString(),
-        errors: ERROR_LOG,
-        debug: DEBUG_INFO,
-        userAgent: navigator.userAgent,
-        url: window.location.href
-    };
-    
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(dataBlob);
-    link.download = `powerball-oracle-logs-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    
-    logDebug('Logs exported');
-}
-
 // ===== INITIALIZATION =====
 function initializeDebugSystem() {
     logDebug('Debug system initializing');
@@ -364,39 +312,6 @@ function initializeDebugSystem() {
             promise: event.promise
         });
     });
-    
-    // Add debug panel styling
-    const style = document.createElement('style');
-    style.textContent = `
-        .log-entry { margin-bottom: 8px; padding: 5px; border-radius: 3px; }
-        .log-entry.error { background: rgba(220, 20, 60, 0.1); }
-        .log-entry.warning { background: rgba(255, 165, 0, 0.1); }
-        .log-header { display: flex; align-items: center; gap: 8px; font-weight: bold; }
-        .log-time { font-size: 0.8em; color: #999; }
-        .log-message { margin: 3px 0; }
-        .log-details, .debug-data { 
-            background: rgba(0,0,0,0.3); 
-            padding: 5px; 
-            border-radius: 3px; 
-            margin-top: 5px;
-            font-size: 0.8em;
-        }
-        .log-details pre, .debug-data pre { 
-            margin: 0; 
-            white-space: pre-wrap; 
-            word-break: break-word; 
-        }
-        .log-summary, .debug-summary { 
-            text-align: center; 
-            font-style: italic; 
-            color: #666; 
-            margin-top: 8px; 
-        }
-        .debug-entry { margin-bottom: 6px; }
-        .debug-header { display: flex; align-items: center; gap: 8px; }
-        .debug-message { color: #87ceeb; margin: 2px 0; }
-    `;
-    document.head.appendChild(style);
     
     // Run initial health check
     setTimeout(() => {
