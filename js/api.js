@@ -95,6 +95,27 @@ async function fetchLiveWinningNumbers() {
     }, null);
 }
 
+function formatJackpotAmount(jackpot) {
+    if (!jackpot || jackpot === "Unknown" || jackpot === "0") {
+        return 'Unknown';
+    }
+    
+    const amount = parseInt(jackpot);
+    if (isNaN(amount)) {
+        return 'Unknown';
+    }
+    
+    if (amount >= 1000000000) {
+        return `${(amount / 1000000000).toFixed(1)}B`;
+    } else if (amount >= 1000000) {
+        return `${(amount / 1000000).toFixed(0)}M`;
+    } else if (amount >= 1000) {
+        return `${(amount / 1000).toFixed(0)}K`;
+    } else {
+        return `${amount.toLocaleString()}`;
+    }
+}
+
 // ===== AUTOMATIC DATA UPDATE SYSTEM =====
 async function updateLocalDataWithLive(liveData) {
     return safeAsyncExecute('updateLocalDataWithLive', async () => {
@@ -349,10 +370,7 @@ function displayLatestWinningNumbers() {
         
         displayDiv.innerHTML = html;
         
-        const jackpotFormatted = jackpot && jackpot !== "0" && jackpot !== "Unknown" ? 
-            `$${parseInt(jackpot).toLocaleString()}` : 
-            'Unknown';
-        
+        const jackpotFormatted = formatJackpotAmount(jackpot);
         const sourceIndicator = LATEST_WINNING_NUMBERS.source && LATEST_WINNING_NUMBERS.source.includes("NY.gov Live API") ? "🔴 LIVE" : "📁 Local";
         
         dateDiv.innerHTML = `
