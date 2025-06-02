@@ -95,74 +95,160 @@ async function fetchLiveWinningNumbers() {
     }, null);
 }
 
-// ===== LOCAL LOTTERY DATA MANAGEMENT =====
-async function loadLotteryData() {
-    return safeAsyncExecute('loadLotteryData', async () => {
-        logDebug('Starting lottery data load from local file');
-        
-        const response = await fetch('lottery-data.json');
-        logDebug('Local file fetch response', { 
-            status: response.status, 
-            ok: response.ok,
-            contentType: response.headers.get('content-type')
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+// ===== AUTOMATIC DATA UPDATE SYSTEM =====
+async function updateLocalDataWithLive(liveData) {
+    return safeAsyncExecute('updateLocalDataWithLive', async () => {
+        if (!liveData) {
+            logWarning('No live data to update local storage with');
+            return false;
         }
         
-        const text = await response.text();
-        logDebug('Raw file content', { 
-            length: text.length, 
-            preview: text.substring(0, 100).replace(/\s+/g, ' ')
-        });
+        logDebug('Updating local lottery data with live results', liveData);
         
-        if (!text.trim()) {
-            throw new Error('Empty response from lottery-data.json');
+        // Load current local data
+        let localData = LOTTERY_DATA || {
+            results: [],
+            frequency: { white: {}, red: {} },
+            last_updated: null
+        };
+        
+        // Check if this drawing already exists
+        const existingResult = localData.results.find(r => r.date === liveData.date);
+        if (existingResult) {
+            logDebug('Live data already exists in local storage', { date: liveData.date });
+            return false;
         }
         
-        let parsedData;
+        // Add new result to beginning of array
+        const newResult = {
+            date: liveData.date,
+            white: liveData.white,
+            red: liveData.red,
+            jackpot: liveData.jackpot || "Unknown"
+        };
+        
+        localData.results.unshift(newResult);
+        
+        // Keep only last 50 results to prevent bloat
+        if (localData.results.length > 50) {
+            localData.results = localData.results.slice(0, 50);
+        }
+        
+        // Update frequency data
+        updateFrequencyData(localData, newResult);
+        
+        // Update timestamp
+        localData.last_updated = new Date().toISOString();
+        
+        // Store updated data globally
+        LOTTERY_DATA = localData;
+        
+        // Save to localStorage for persistence (if available)
         try {
-            parsedData = JSON.parse(text);
-        } catch (parseError) {
-            throw new Error(`JSON parse error: ${parseError.message}`);
+            localStorage.setItem('powerball-oracle-data', JSON.stringify(localData));
+            logDebug('Updated data saved to localStorage');
+        } catch (error) {
+            logWarning('Could not save to localStorage', { error: error.message });
         }
         
-        logDebug('Parsed lottery data structure', {
-            hasResults: !!parsedData.results,
-            resultsCount: parsedData.results?.length || 0,
-            hasFrequency: !!parsedData.frequency,
-            lastUpdated: parsedData.last_updated,
-            whiteFrequencyKeys: Object.keys(parsedData.frequency?.white || {}).length,
-            redFrequencyKeys: Object.keys(parsedData.frequency?.red || {}).length
+        logDebug('Local lottery data updated successfully', {
+            totalResults: localData.results.length,
+            newDate: newResult.date,
+            lastUpdated: localData.last_updated
         });
         
-        // Validate data structure
-        if (!parsedData.results) {
-            parsedData.results = [];
-            logWarning('No results array in lottery data, created empty array');
+        return true;
+        
+    }, false);
+}
+
+function updateFrequencyData(data, newResult) {
+    // Initialize frequency objects if they don't exist
+    if (!data.frequency) {
+        data.frequency = { white: {}, red: {} };
+    }
+    
+    // Initialize all numbers to 0 if not present
+    for (let i = 1; i <= 69; i++) {
+        if (!data.frequency.white[i.toString()]) {
+            data.frequency.white[i.toString()] = 0;
         }
-        
-        if (!parsedData.frequency) {
-            parsedData.frequency = { white: {}, red: {} };
-            logWarning('No frequency data found, created empty frequency object');
+    }
+    for (let i = 1; i <= 26; i++) {
+        if (!data.frequency.red[i.toString()]) {
+            data.frequency.red[i.toString()] = 0;
         }
-        
-        // Set global variable
-        LOTTERY_DATA = parsedData;
-        
-        logDebug('Lottery data loaded successfully', {
-            totalResults: LOTTERY_DATA.results.length,
-            latestDate: LOTTERY_DATA.results[0]?.date || 'None'
-        });
-        
-        return parsedData;
-        
-    }, {
-        results: [],
-        frequency: { white: {}, red: {} },
-        last_updated: null
+    }
+    
+    // Update frequencies with new result
+    newResult.white.forEach(num => {
+        data.frequency.white[num.toString()]++;
     });
+    
+    data.frequency.red[newResult.red.toString()]++;
+    
+    logDebug('Frequency data updated', {
+        whiteNumbers: newResult.white,
+        redNumber: newResult.red
+    });
+}
+
+async function loadLotteryDataWithFallback() {
+    return safeAsyncExecute('loadLotteryDataWithFallback', async () => {
+        logDebug('Loading lottery data with localStorage fallback');
+        
+        // Try localStorage first (most recent)
+        try {
+            const stored = localStorage.getItem('powerball-oracle-data');
+            if (stored) {
+                const parsedStored = JSON.parse(stored);
+                logDebug('Loaded data from localStorage', {
+                    resultsCount: parsedStored.results?.length || 0,
+                    lastUpdated: parsedStored.last_updated
+                });
+                LOTTERY_DATA = parsedStored;
+                return parsedStored;
+            }
+        } catch (error) {
+            logWarning('Could not load from localStorage', { error: error.message });
+        }
+        
+        // Fallback to remote file
+        try {
+            const response = await fetch('lottery-data.json');
+            if (response.ok) {
+                const text = await response.text();
+                const parsedData = JSON.parse(text);
+                logDebug('Loaded data from remote file', {
+                    resultsCount: parsedData.results?.length || 0
+                });
+                LOTTERY_DATA = parsedData;
+                return parsedData;
+            }
+        } catch (error) {
+            logWarning('Could not load from remote file', { error: error.message });
+        }
+        
+        // Create minimal fallback structure
+        const fallbackData = {
+            results: [],
+            frequency: { white: {}, red: {} },
+            last_updated: new Date().toISOString()
+        };
+        
+        // Initialize frequency counters
+        for (let i = 1; i <= 69; i++) {
+            fallbackData.frequency.white[i.toString()] = 0;
+        }
+        for (let i = 1; i <= 26; i++) {
+            fallbackData.frequency.red[i.toString()] = 0;
+        }
+        
+        LOTTERY_DATA = fallbackData;
+        logDebug('Created fallback lottery data structure');
+        return fallbackData;
+        
+    }, null);
 }
 
 // ===== WINNING NUMBERS MANAGEMENT =====
@@ -290,15 +376,21 @@ async function initializeLotteryData() {
     return safeAsyncExecute('initializeLotteryData', async () => {
         logDebug('Initializing lottery data system');
         
-        // Try to fetch live winning numbers first
+        // Load local/stored data first
+        await loadLotteryDataWithFallback();
+        
+        // Try to fetch live winning numbers
         const liveNumbers = await fetchLiveWinningNumbers();
         if (liveNumbers) {
             LATEST_WINNING_NUMBERS = liveNumbers;
             logDebug('Live winning numbers loaded');
+            
+            // Update local data with live results
+            const updated = await updateLocalDataWithLive(liveNumbers);
+            if (updated) {
+                logDebug('Local data updated with live results');
+            }
         }
-        
-        // Load local lottery data for frequency analysis
-        await loadLotteryData();
         
         // If we didn't get live numbers, try local data
         if (!LATEST_WINNING_NUMBERS) {
@@ -316,9 +408,10 @@ async function initializeLotteryData() {
         }
         
         logDebug('Lottery data initialization completed', {
-            hasLiveNumbers: !!(LATEST_WINNING_NUMBERS && LATEST_WINNING_NUMBERS.source === "NY.gov Live API"),
+            hasLiveNumbers: !!(LATEST_WINNING_NUMBERS && LATEST_WINNING_NUMBERS.source && LATEST_WINNING_NUMBERS.source.includes("Live API")),
             hasLocalData: !!(LOTTERY_DATA && LOTTERY_DATA.results.length > 0),
-            latestSource: LATEST_WINNING_NUMBERS?.source || 'None'
+            latestSource: LATEST_WINNING_NUMBERS?.source || 'None',
+            totalStoredResults: LOTTERY_DATA?.results?.length || 0
         });
         
         return {
