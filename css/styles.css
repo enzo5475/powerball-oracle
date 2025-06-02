@@ -220,6 +220,73 @@ h1 {
     color: #4682b4;
 }
 
+/* Debug panel specific styles */
+.log-entry { 
+    margin-bottom: 8px; 
+    padding: 5px; 
+    border-radius: 3px; 
+}
+
+.log-entry.error { 
+    background: rgba(220, 20, 60, 0.1); 
+}
+
+.log-entry.warning { 
+    background: rgba(255, 165, 0, 0.1); 
+}
+
+.log-header { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    font-weight: bold; 
+}
+
+.log-time { 
+    font-size: 0.8em; 
+    color: #999; 
+}
+
+.log-message { 
+    margin: 3px 0; 
+}
+
+.log-details, .debug-data { 
+    background: rgba(0,0,0,0.3); 
+    padding: 5px; 
+    border-radius: 3px; 
+    margin-top: 5px;
+    font-size: 0.8em;
+}
+
+.log-details pre, .debug-data pre { 
+    margin: 0; 
+    white-space: pre-wrap; 
+    word-break: break-word; 
+}
+
+.log-summary, .debug-summary { 
+    text-align: center; 
+    font-style: italic; 
+    color: #666; 
+    margin-top: 8px; 
+}
+
+.debug-entry { 
+    margin-bottom: 6px; 
+}
+
+.debug-header { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+}
+
+.debug-message { 
+    color: #87ceeb; 
+    margin: 2px 0; 
+}
+
 /* ===== LOADING AND STATUS ===== */
 .loading {
     text-align: center;
