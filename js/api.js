@@ -4,81 +4,93 @@
 let LOTTERY_DATA = null;
 let LATEST_WINNING_NUMBERS = null;
 
-// ===== NY.GOV API INTEGRATION =====
+// ===== NY.GOV API INTEGRATION (CORS-FREE) =====
 async function fetchLiveWinningNumbers() {
     return safeAsyncExecute('fetchLiveWinningNumbers', async () => {
-        logDebug('Fetching live winning numbers from NY.gov API');
+        logDebug('Attempting to fetch live winning numbers via CORS proxy');
         
-        const apiUrl = "https://data.ny.gov/api/views/d6yy-54nr/rows.json";
-        
-        const response = await fetch(apiUrl, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'User-Agent': 'PowerballOracle/1.0'
-            },
-            timeout: 10000
-        });
-        
-        if (!response.ok) {
-            throw new Error(`API responded with ${response.status}: ${response.statusText}`);
+        // Try CORS proxy first
+        try {
+            const proxyUrl = "https://api.allorigins.win/get?url=";
+            const apiUrl = encodeURIComponent("https://data.ny.gov/api/views/d6yy-54nr/rows.json");
+            const fullUrl = proxyUrl + apiUrl;
+            
+            const response = await fetch(fullUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                timeout: 10000
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Proxy responded with ${response.status}: ${response.statusText}`);
+            }
+            
+            const proxyData = await response.json();
+            const json = JSON.parse(proxyData.contents);
+            
+            logDebug('Proxy API response received', { 
+                dataLength: json.data?.length || 0,
+                metaColumns: json.meta?.view?.columns?.length || 0
+            });
+            
+            if (!json.data || json.data.length === 0) {
+                throw new Error('No data received from API via proxy');
+            }
+            
+            // Get the latest drawing (last item in array)
+            const latest = json.data[json.data.length - 1];
+            
+            if (!latest || latest.length < 11) {
+                throw new Error('Invalid data format from API');
+            }
+            
+            const drawDateRaw = latest[8]; // e.g. "2025-05-31T00:00:00"
+            const winningNumbersStr = latest[9]; // e.g. "07 10 11 13 24"
+            const powerball = parseInt(latest[10]);
+            
+            logDebug('Raw API data via proxy', {
+                date: drawDateRaw,
+                numbers: winningNumbersStr,
+                powerball: powerball
+            });
+            
+            // Validate and parse winning numbers
+            if (!winningNumbersStr || typeof winningNumbersStr !== 'string') {
+                throw new Error('Invalid winning numbers format');
+            }
+            
+            const winningNumbers = winningNumbersStr.split(' ')
+                .map(num => parseInt(num.trim()))
+                .filter(num => !isNaN(num) && num >= 1 && num <= 69);
+            
+            if (winningNumbers.length !== 5) {
+                throw new Error(`Expected 5 winning numbers, got ${winningNumbers.length}`);
+            }
+            
+            if (isNaN(powerball) || powerball < 1 || powerball > 26) {
+                throw new Error(`Invalid Powerball number: ${powerball}`);
+            }
+            
+            const liveData = {
+                white: winningNumbers.sort((a, b) => a - b),
+                red: powerball,
+                date: drawDateRaw.split('T')[0], // Convert to YYYY-MM-DD format
+                dateFormatted: formatDate(drawDateRaw),
+                jackpot: "Unknown", // API doesn't provide jackpot amount
+                source: "NY.gov Live API (via proxy)"
+            };
+            
+            logDebug('Live winning numbers parsed successfully via proxy', liveData);
+            return liveData;
+            
+        } catch (proxyError) {
+            logWarning('CORS proxy failed, using fallback generator', { error: proxyError.message });
+            
+            // Use fallback generator if proxy fails
+            return await fetchFromBackupSource();
         }
-        
-        const json = await response.json();
-        logDebug('API response received', { 
-            dataLength: json.data?.length || 0,
-            metaColumns: json.meta?.view?.columns?.length || 0
-        });
-        
-        if (!json.data || json.data.length === 0) {
-            throw new Error('No data received from API');
-        }
-        
-        // Get the latest drawing (last item in array)
-        const latest = json.data[json.data.length - 1];
-        
-        if (!latest || latest.length < 11) {
-            throw new Error('Invalid data format from API');
-        }
-        
-        const drawDateRaw = latest[8]; // e.g. "2025-05-31T00:00:00"
-        const winningNumbersStr = latest[9]; // e.g. "07 10 11 13 24"
-        const powerball = parseInt(latest[10]);
-        
-        logDebug('Raw API data', {
-            date: drawDateRaw,
-            numbers: winningNumbersStr,
-            powerball: powerball
-        });
-        
-        // Validate and parse winning numbers
-        if (!winningNumbersStr || typeof winningNumbersStr !== 'string') {
-            throw new Error('Invalid winning numbers format');
-        }
-        
-        const winningNumbers = winningNumbersStr.split(' ')
-            .map(num => parseInt(num.trim()))
-            .filter(num => !isNaN(num) && num >= 1 && num <= 69);
-        
-        if (winningNumbers.length !== 5) {
-            throw new Error(`Expected 5 winning numbers, got ${winningNumbers.length}`);
-        }
-        
-        if (isNaN(powerball) || powerball < 1 || powerball > 26) {
-            throw new Error(`Invalid Powerball number: ${powerball}`);
-        }
-        
-        const liveData = {
-            white: winningNumbers.sort((a, b) => a - b),
-            red: powerball,
-            date: drawDateRaw.split('T')[0], // Convert to YYYY-MM-DD format
-            dateFormatted: formatDate(drawDateRaw),
-            jackpot: "Unknown", // API doesn't provide jackpot amount
-            source: "NY.gov Live API"
-        };
-        
-        logDebug('Live winning numbers parsed successfully', liveData);
-        return liveData;
         
     }, null);
 }
@@ -157,7 +169,7 @@ async function loadLotteryData() {
 function getLatestWinningNumbers() {
     return safeExecute('getLatestWinningNumbers', () => {
         // First try to get from live API data
-        if (LATEST_WINNING_NUMBERS && LATEST_WINNING_NUMBERS.source === "NY.gov Live API") {
+        if (LATEST_WINNING_NUMBERS && LATEST_WINNING_NUMBERS.source && LATEST_WINNING_NUMBERS.source.includes("NY.gov Live API")) {
             logDebug('Using live API winning numbers');
             return LATEST_WINNING_NUMBERS;
         }
@@ -255,7 +267,7 @@ function displayLatestWinningNumbers() {
             `$${parseInt(jackpot).toLocaleString()}` : 
             'Unknown';
         
-        const sourceIndicator = source === "NY.gov Live API" ? "🔴 LIVE" : "📁 Local";
+        const sourceIndicator = LATEST_WINNING_NUMBERS.source && LATEST_WINNING_NUMBERS.source.includes("NY.gov Live API") ? "🔴 LIVE" : "📁 Local";
         
         dateDiv.innerHTML = `
             ${sourceIndicator} | Drawing: ${dateFormatted}<br>
