@@ -295,12 +295,12 @@ function calculateZodiacNumbers() {
     
     for (let i = 0; i < 8; i++) {
         const angle = (baseAngle + i * 15) % 360;
-        const num = ((angle / 5) % 69) + 1;
+        const num = Math.floor(angle / 5) % 69 + 1;
         numbers.push(num);
     }
     
     const whites = ensureValidNumbers(numbers, 1, 69, 5);
-    const red = (baseAngle / 13) % 26 + 1;
+    const red = Math.floor(baseAngle / 13) % 26 + 1;
     
     const signNames = Object.keys(ZODIAC_DEGREES);
     
@@ -338,23 +338,23 @@ function calculateChaosNumbers() {
     const now = new Date();
     const x = (now.getHours() + 1) / 24;
     
-    const [sigma, rho, beta] = CHAOS_CONSTANTS.lorenz;
     const numbers = [];
-    
     let current = x;
+    
+    // Simplified chaos calculation that stays bounded
     for (let i = 0; i < 8; i++) {
-        current = sigma * (current - current * current) + rho * current - beta * current;
-        const num = Math.floor(Math.abs(current * 100) % 69) + 1;
+        current = (current * 3.7 * (1 - current)) % 1;
+        const num = Math.floor(current * 69) + 1;
         numbers.push(num);
     }
     
     const whites = ensureValidNumbers(numbers, 1, 69, 5);
-    const red = Math.floor(Math.abs(current * 26)) + 1;
+    const red = Math.floor(current * 26) + 1;
     
     return {
         whites: whites,
         red: red,
-        note: `🌀 Hourly - Chaos Theory (Lorenz), Hour: ${now.getHours()}`
+        note: `🌀 Hourly - Chaos Theory (Logistic Map), Hour: ${now.getHours()}`
     };
 }
 
