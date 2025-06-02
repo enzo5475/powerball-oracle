@@ -1,1 +1,257 @@
+/* ===== GLOBAL STYLES ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
+body {
+    font-family: 'Courier New', monospace;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d3a 50%, #3a3a4e 100%);
+    color: #7fb069;
+    min-height: 100vh;
+    padding: 10px;
+}
+
+/* ===== MAIN CONTAINER ===== */
+.container {
+    max-width: 400px;
+    margin: 0 auto;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid #7fb069;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 20px rgba(127, 176, 105, 0.3);
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #ffffff;
+    text-shadow: 0 0 10px #7fb069;
+    font-size: 1.5em;
+}
+
+/* ===== BUTTONS ===== */
+.generate-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(45deg, #ff6b35, #f7941d);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    font-size: 1.1em;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.generate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+}
+
+.toggle-btn {
+    background: #666;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.toggle-btn:hover {
+    background: #888;
+}
+
+/* ===== LATEST WINNING NUMBERS ===== */
+.latest-numbers {
+    background: rgba(255, 215, 0, 0.1);
+    border: 2px solid #ffd700;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.latest-numbers h3 {
+    color: #ffd700;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.winning-numbers {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+
+/* ===== BALL STYLES ===== */
+.white-ball {
+    background: white;
+    color: black;
+    padding: 8px 10px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 0.9em;
+    min-width: 35px;
+    text-align: center;
+}
+
+.red-ball {
+    background: #dc143c;
+    color: white;
+    padding: 8px 10px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 0.9em;
+    min-width: 35px;
+    text-align: center;
+}
+
+/* ===== METHOD GROUPS ===== */
+.method-group {
+    margin-bottom: 15px;
+    background: rgba(127, 176, 105, 0.05);
+    border-left: 3px solid #7fb069;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.method-title {
+    color: #7fb069;
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.numbers {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+}
+
+.calculation-note {
+    font-size: 0.7em;
+    color: #888;
+    font-style: italic;
+}
+
+/* ===== WINNING STATUS INDICATORS ===== */
+.winning-status {
+    margin-top: 5px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.win-jackpot {
+    background: linear-gradient(45deg, #ffd700, #ffed4e);
+    color: #000;
+    animation: flash 1s infinite;
+}
+
+.win-million {
+    background: linear-gradient(45deg, #c0392b, #e74c3c);
+    color: white;
+}
+
+.win-large {
+    background: linear-gradient(45deg, #27ae60, #2ecc71);
+    color: white;
+}
+
+.win-medium {
+    background: linear-gradient(45deg, #2980b9, #3498db);
+    color: white;
+}
+
+.win-small {
+    background: linear-gradient(45deg, #8e44ad, #9b59b6);
+    color: white;
+}
+
+.win-none {
+    background: #444;
+    color: #999;
+}
+
+@keyframes flash {
+    0%, 50% { opacity: 1; }
+    25%, 75% { opacity: 0.5; }
+}
+
+/* ===== ERROR AND DEBUG BOXES ===== */
+.error-box {
+    background: rgba(220, 20, 60, 0.1);
+    border: 1px solid #dc143c;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 15px;
+    color: #ff6b6b;
+    font-size: 0.85em;
+}
+
+.error-box h4 {
+    margin: 0 0 8px 0;
+    color: #dc143c;
+}
+
+.debug-box {
+    background: rgba(70, 130, 180, 0.1);
+    border: 1px solid #4682b4;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 15px;
+    color: #87ceeb;
+    font-size: 0.8em;
+    font-family: monospace;
+}
+
+.debug-box h4 {
+    margin: 0 0 8px 0;
+    color: #4682b4;
+}
+
+/* ===== LOADING AND STATUS ===== */
+.loading {
+    text-align: center;
+    color: #7fb069;
+    font-style: italic;
+}
+
+.timestamp {
+    text-align: center;
+    color: #666;
+    font-size: 0.8em;
+    margin-top: 15px;
+    border-top: 1px solid #333;
+    padding-top: 10px;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 480px) {
+    .container {
+        margin: 5px;
+        padding: 15px;
+    }
+    
+    .numbers {
+        justify-content: center;
+    }
+    
+    .winning-numbers {
+        justify-content: center;
+    }
+    
+    h1 {
+        font-size: 1.3em;
+    }
+}
